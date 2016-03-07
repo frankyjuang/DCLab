@@ -135,25 +135,55 @@ module DE2_115(
 	output [16:0] HSMC_TX_D_P,
 	inout [6:0] EX_IO
 );
-	logic keydown;
-	logic [3:0] random_value;
+	logic keydown_0, keydown_1, keydown_2, keydown_3;
+	logic [3:0] random_value_0, random_value_1, random_value_2, random_value_3;
 	Debounce deb0(
 		.i_in(KEY[0]),
 		.i_clk(CLOCK_50),
-		.o_neg(keydown)
+		.o_neg(keydown_0)
+	);
+	Debounce deb1(
+		.i_in(KEY[1]),
+		.i_clk(CLOCK_50),
+		.o_neg(keydown_1)
+	);
+	Debounce deb2(
+		.i_in(KEY[2]),
+		.i_clk(CLOCK_50),
+		.o_neg(keydown_2)
+	);
+	Debounce deb3(
+		.i_in(KEY[3]),
+		.i_clk(CLOCK_50),
+		.o_neg(keydown_3)
 	);
 	Top top0(
 		.i_clk(CLOCK_50),
-		.i_start(keydown),
-		.o_random_out(random_value)
+		.i_start(keydown_0),
+		.i_reset(keydown_1),
+		.i_dec(keydown_2),
+		.i_inc(keydown_3),
+		.o_random_out_0(random_value_0),
+		.o_random_out_1(random_value_1),
+		.o_random_out_2(random_value_2),
+		.o_random_out_3(random_value_3)
 	);
 	SevenHexDecoder seven_dec0(
-		.i_hex(random_value),
-		.o_seven_ten(HEX1),
-		.o_seven_one(HEX0)
+		.i_hex(random_value_0),
+		.o_seven(HEX0)
 	);
-	assign HEX2 = '1;
-	assign HEX3 = '1;
+	SevenHexDecoder seven_dec1(
+		.i_hex(random_value_1),
+		.o_seven(HEX1)
+	);
+	SevenHexDecoder seven_dec2(
+		.i_hex(random_value_2),
+		.o_seven(HEX2)
+	);
+	SevenHexDecoder seven_dec3(
+		.i_hex(random_value_3),
+		.o_seven(HEX3)
+	);
 	assign HEX4 = '1;
 	assign HEX5 = '1;
 	assign HEX6 = '1;
