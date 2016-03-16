@@ -18,7 +18,7 @@ module Top(
 	// Constants.
 	parameter CNT_TOP = 100000000;
 	parameter CNT_INIT_TOP = 2000000;
-	localparam CNT_CYCLE_TOP = CNT_INIT_TOP + 40;	// times to display when RUN
+	localparam CNT_CYCLE_TOP = CNT_INIT_TOP + 50;	// times to display when RUN
 	
 	// States.
 	parameter RESET = 3'b000;
@@ -48,83 +48,73 @@ module Top(
 				random_w[i] = 32'h000a0000;
 			else
 				random_w[i] = random_r[i];
-				
-		case (state_r)
-			RESET		:	if (i_start == 1'b1) begin
-								counter_w = 0;
-								counter_top_w = CNT_INIT_TOP;
-								for (int i = 0; i <= 3; ++i)
-									if (active_r[i] == 1'b1)
-										random_w[i] = time_r + 7 * i;
-								state_w = RUN;
-							end else if (i_dec == 1'b1) begin
-								for (int i = 1; i <= 3; i++)
-									if (active_r[i] != active_r[i+1]) 
-										active_w[i] = 1'b0;
-							end else if (i_inc == 1'b1) begin
-								for (int i = 3; i >= 1; i--)
-									if (active_r[i] != active_r[i-1]) begin
-										active_w[i] = 1'b1;
-										random_w[i] = 32'h00000000;
-									end
-							end
-			RUN		:	if (i_reset == 1'b1) begin
-								for (int i = 0; i <= 3; ++i)
-									if (active_r[i] == 1'b1)
-										random_w[i] = 32'h00000000;
-								state_w = RESET;
-							end else	if (i_start == 1'b1) begin
-								counter_w = 0;
-								counter_top_w = CNT_INIT_TOP;
-							end else if (counter_r >= counter_top_r) begin
-								counter_w = 0;
-								counter_top_w = counter_top_r + 1;
-								for (int i = 0; i <= 3; ++i)
-									if (active_r[i] == 1'b1)
-										random_w[i] = (random_r[i] * 1103515245 + 12345) % 2147483648;
-							end else if (counter_r >= CNT_CYCLE_TOP) begin
-								counter_w = 0;
-								counter_slow_w = 0;
-								counter_top_w = CNT_INIT_TOP;
-								state_w = SLOW_3;
-							end else begin
-								for (int i = 0; i <= 3; ++i)
-									if (active_r[i] == 1'b1)
-										random_w[i][19:16] = random_r[i][19:16] % 10;
-								counter_w = counter_r + 1;
-							end
-			SLOW_3	:	if (i_reset == 1'b1) begin
-								for (int i = 0; i <= 3; ++i)
-									if (active_r[i] == 1'b1)
-										random_w[i] = 32'h00000000;
-								state_w = RESET;
-							end else	if (i_start == 1'b1) begin
-								counter_w = 0;
-								counter_top_w = CNT_INIT_TOP;
-								state_w = RUN;
-							end else if (counter_r >= CNT_INIT_TOP) begin
-								counter_w = 0;
-								for (int i = 0; i <= 2; ++i)
-									if (active_r[i] == 1'b1)
-										random_w[i] = (random_r[i] * 1103515245 + 12345) % 2147483648;
-							end else if (counter_slow_r >= counter_top_r) begin 
-								counter_slow_w = 0;
-								counter_top_w = counter_top_r + counter_top_r / 3;
-								random_w[3] = (random_r[3] * 1103515245 + 12345) % 2147483648;
-							end else if (counter_slow_r >= CNT_TOP) begin
-								counter_w = 0;
-								counter_slow_w = 0;
-								counter_top_w = CNT_INIT_TOP;
-								// state_w = SLOW_2;
-								state_w = RESET;
-							end else begin
-								for (int i = 0; i <= 3; ++i)
-									if (active_r[i] == 1'b1)
-										random_w[i][19:16] = random_r[i][19:16] % 10;
-								counter_w = counter_r + 1;
-								counter_slow_w = counter_slow_r + 1;
-							end
-		endcase
+		
+		if (i_reset == 1'b1) begin
+			for (int i = 0; i <= 3; ++i)
+				if (active_r[i] == 1'b1)
+					random_w[i] = 32'h00000000;
+			state_w = RESET;
+		end else	if (i_start == 1'b1) begin
+			counter_w = 0;
+			counter_top_w = CNT_INIT_TOP;
+			for (int i = 0; i <= 3; ++i)
+				if (active_r[i] == 1'b1)
+					random_w[i] = time_r + 7 * i;
+			state_w = RUN;
+		end else begin
+			case (state_r)
+				RESET		:	if (i_dec == 1'b1) begin
+									for (int i = 1; i <= 3; i++)
+										if (active_r[i] != active_r[i+1]) 
+											active_w[i] = 1'b0;
+								end else if (i_inc == 1'b1) begin
+									for (int i = 3; i >= 1; i--)
+										if (active_r[i] != active_r[i-1]) begin
+											active_w[i] = 1'b1;
+											random_w[i] = 32'h00000000;
+										end
+								end
+				RUN		:	if (counter_r >= counter_top_r) begin
+									counter_w = 0;
+									counter_top_w = counter_top_r + 1;
+									for (int i = 0; i <= 3; ++i)
+										if (active_r[i] == 1'b1)
+											random_w[i] = (random_r[i] * 1103515245 + 12345) % 2147483648;
+								end else if (counter_r >= CNT_CYCLE_TOP) begin
+									counter_w = 0;
+									counter_slow_w = 0;
+									counter_top_w = CNT_INIT_TOP;
+									state_w = SLOW_3;
+								end else begin
+									for (int i = 0; i <= 3; ++i)
+										if (active_r[i] == 1'b1)
+											random_w[i][19:16] = random_r[i][19:16] % 10;
+									counter_w = counter_r + 1;
+								end
+				SLOW_3	:	if (counter_r >= CNT_INIT_TOP) begin
+									counter_w = 0;
+									for (int i = 0; i <= 2; ++i)
+										if (active_r[i] == 1'b1)
+											random_w[i] = (random_r[i] * 1103515245 + 12345) % 2147483648;
+								end else if (counter_slow_r >= counter_top_r) begin 
+									counter_slow_w = 0;
+									counter_top_w = counter_top_r + counter_top_r / 3;
+									random_w[3] = (random_r[3] * 1103515245 + 12345) % 2147483648;
+								end else if (counter_slow_r >= CNT_TOP) begin
+									counter_w = 0;
+									counter_slow_w = 0;
+									counter_top_w = CNT_INIT_TOP;
+									// state_w = SLOW_2;
+									state_w = RESET;
+								end else begin
+									for (int i = 0; i <= 3; ++i)
+										if (active_r[i] == 1'b1)
+											random_w[i][19:16] = random_r[i][19:16] % 10;
+									counter_w = counter_r + 1;
+									counter_slow_w = counter_slow_r + 1;
+								end
+			endcase
+		end
 	end
 	
 	always_ff @(posedge i_clk) begin
@@ -132,7 +122,7 @@ module Top(
 		counter_r <= counter_w;
 		counter_slow_r <= counter_slow_w;
 		counter_top_r <= counter_top_w;
-		time_r <= time_w;	
+		time_r <= time_w;
 		active_r <= active_w;
 		random_r <= random_w;
 	end
