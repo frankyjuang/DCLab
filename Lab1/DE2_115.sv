@@ -136,7 +136,7 @@ module DE2_115(
 	inout [6:0] EX_IO
 );
 	logic keydown_0, keydown_1, keydown_2, keydown_3;
-	logic [3:0] random_value_0, random_value_1, random_value_2, random_value_3;
+	logic [4:0] random_value_0, random_value_1, random_value_2, random_value_3;
 	Debounce deb0(
 		.i_in(KEY[0]),
 		.i_clk(CLOCK_50),

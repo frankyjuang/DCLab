@@ -1,6 +1,10 @@
 
 State Machine - |DE2_115|Top:top0|state_r
-Name state_r.RESET state_r.SLOW_3 state_r.RUN 
-state_r.RESET 0 0 0 
-state_r.RUN 1 0 1 
-state_r.SLOW_3 1 1 0 
+Name state_r.FLASH state_r.SLOW_0 state_r.SLOW_1 state_r.SLOW_2 state_r.SLOW_3 state_r.RUN state_r.RESET 
+state_r.RESET 0 0 0 0 0 0 0 
+state_r.RUN 0 0 0 0 0 1 1 
+state_r.SLOW_3 0 0 0 0 1 0 1 
+state_r.SLOW_2 0 0 0 1 0 0 1 
+state_r.SLOW_1 0 0 1 0 0 0 1 
+state_r.SLOW_0 0 1 0 0 0 0 1 
+state_r.FLASH 1 0 0 0 0 0 1 
