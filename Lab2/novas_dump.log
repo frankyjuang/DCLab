@@ -1,0 +1,230 @@
+ncsim(64) 12.20-s012
+Linux 3.16.0-38-generic #52~14.04.1-Ubuntu SMP Fri May 8 09:43:57 UTC 2015 x86_64
+CPU cores: 12
+Limit information:
+======================================
+cputime			unlimited
+filesize		unlimited
+datasize		unlimited
+stacksize		8192 kbytes
+coredumpsize	0 kbytes
+memoryuse		unlimited
+vmemoryuse		unlimited
+descriptors		1024
+memorylocked	64 kbytes
+maxproc			257166
+======================================
+(Special)Runtime environment variables:
+
+Runtime environment variables:
+CADENCE_PATH=/opt/CAD
+DISPLAY=localhost:10.0
+EDITOR=vim
+HISTFILE=/home/team06/.zhistory
+HISTSIZE=1000
+HOME=/home/team06
+HOSTNAME=dclab-server
+INCA_64BIT=
+LANG=en_US.UTF-8
+LC_ADDRESS=zh_TW.UTF-8
+LC_IDENTIFICATION=zh_TW.UTF-8
+LC_MEASUREMENT=zh_TW.UTF-8
+LC_MONETARY=zh_TW.UTF-8
+LC_NAME=zh_TW.UTF-8
+LC_NUMERIC=zh_TW.UTF-8
+LC_PAPER=zh_TW.UTF-8
+LC_TELEPHONE=zh_TW.UTF-8
+LD_LIBRARY_PATH=/opt/CAD/verdi/cur/share/PLI/IUS/LINUX64/:/opt/CAD/verdi/cur/etc/lib/libstdc++/LINUX64/::/opt/CAD/INCISIV/cur//lib:/opt/CAD/INCISIV/cur//lib:/opt/CAD/INCISIV/cur//lib
+LM_LICENSE_FILE=:5280@lsntu:26585@lsntu
+LOGNAME=team06
+MAIL=/var/mail/team06
+MENTOR_PATH=/opt/CAD
+MUTT_EDITOR=vim
+OLDPWD=/home/team06/dclab/Lab2/pc_sw
+PAGER=less
+PATH=/opt/CAD/INCISIV/cur/tools/bin/64bit:/home/team06/local/bin:/opt/CAD/INCISIV/cur/tools/bin/:/usr/local/bin:/usr/local/sbin/:/bin:/sbin:/usr/bin:/usr/sbin:/opt/CAD/verdi/cur/bin:/opt/CAD/verdi/cur/nLint/bin:/home/team06/local/bin:/opt/CAD/INCISIV/cur/tools/bin/:/usr/local/bin:/usr/local/sbin/:/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/opt/CAD/INCISIV/cur/tools/dfII/bin:/opt/CAD/INCISIV/cur/tools/vtools/vfault/bin:/opt/CAD/INCISIV/cur/tools/bin
+PR_BLUE=%{[1m[34m%}
+PR_CYAN=%{[1m[36m%}
+PR_GREEN=%{[1m[32m%}
+PR_LIGHT_BLUE=%{[34m%}
+PR_LIGHT_CYAN=%{[36m%}
+PR_LIGHT_GREEN=%{[32m%}
+PR_LIGHT_MAGENTA=%{[35m%}
+PR_LIGHT_RED=%{[31m%}
+PR_LIGHT_WHITE=%{[37m%}
+PR_LIGHT_YELLOW=%{[33m%}
+PR_MAGENTA=%{[1m[35m%}
+PR_NO_COLOR=%{[m%}
+PR_RED=%{[1m[31m%}
+PR_WHITE=%{[1m[37m%}
+PR_YELLOW=%{[1m[33m%}
+PS1=[%{[1m[34m%}%n%{[1m[37m%}@%{[1m[32m%}%~%{[m%}]%{[1m[33m%}%#%{[m%} 
+PWD=/home/team06/dclab/Lab2
+RPS1=(%?)
+SAVEHIST=1000
+SHELL=/bin/zsh
+SHLIB_PATH=/opt/CAD/verdi/cur/share/PLI/IUS/LINUX64/:
+SHLVL=2
+SPRING_PATH=/opt/CAD
+SSH_CLIENT=140.112.33.163 37610 12345
+SSH_CONNECTION=140.112.33.163 37610 192.168.163.250 12345
+SSH_TTY=/dev/pts/2
+SYNOPSYS_PATH=/opt/CAD
+TERM=screen-256color
+TMUX=/tmp/tmux-1007/default,41555,0
+TMUX_PANE=%1
+USER=team06
+USE_PIPE=1
+XDG_RUNTIME_DIR=/run/user/1007
+XDG_SESSION_COOKIE=571dd7728312820a3245d4005631da4c-1460036355.644213-554655024
+XDG_SESSION_ID=3827
+_=/opt/CAD/INCISIV/cur/tools/bin//ncverilog
+count=14
+mapfile=zsh/mapfile
+color=WHITE
+/home/team06/dclab/Lab2/INCA_libs/irun.lnx8664.12.20.nc/svpp.ts
+CDS_ARCH=lnx86
+NCRUNMODE=ncverilog:./INCA_libs/irun.lnx8664.12.20.nc
+IRUNBATCH=FALSE
+IMPERAS_PORT_FILE=.vsp_ovp_gdb_port
+TCL_LIBRARY=/opt/CAD/INCISIV/cur/tools/inca/files/tcl/library
+Runtime command line arguments:
+argv[0]=ncverilog
+argv[1]=tb_simple_master.sv
+argv[2]=Rsa256Wrapper.sv
+argv[3]=Rsa256Core.sv
+95 profile - 100
+          CPU/Mem usage: 0.010 sys,  0.030 user,  85.92M sys,  0.00M vm
+96 VC callback profile - scalar:0 vector:0
+97 Wed Apr 13 16:04:44 2016
+98 pliAppInit
+99 *Verdi3* : Enable Parallel Dumping.
+100 pliAppMiscSet: New Sim Round
+101 LIBSSCORE=found /opt/CAD/verdi/cur/share/PLI/IUS/LINUX64/libsscore_ius122.so through $LD_LIBRARY_PATH setting.
+102 argv[0]: lab2-2.fsdb
+103 Catch signal 11. Stack trace follows:
+stack trace not available104 FSDB Dumper for IUS, Release Verdi3_2013.07, Linux x86_64/64bit, 07/04/2013
+105 (C) 1996 - 2013 by Synopsys, Inc.
+106 sps_call_fsdbDumpfile at 0 : /home/team06/dclab/Lab2/tb_simple_master.sv(53)
+107 argv[0]: lab2-2.fsdb
+108 *Verdi3* FSDB WARNING: The FSDB file already exists. Overwriting the FSDB file may crash the programs that are using this file.
+109 *Verdi3* : Create FSDB file 'lab2-2.fsdb'
+110 sps_call_fsdbDumpvars at 0 : /home/team06/dclab/Lab2/tb_simple_master.sv(54)
+111 *Verdi3* : Begin traversing the scopes, layer (0).
+112 *Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.avm_rst(48)
+113 *Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.avm_clk(48)
+114 *Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.avm_address(48)
+115 *Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.avm_read(48)
+116 *Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.avm_readdata(48)
+117 *Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.avm_write(48)
+118 *Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.avm_writedata(48)
+119 *Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.avm_waitrequest(48)
+120 *Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.nread(25)
+121 *Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.nwrite(25)
+122 *Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.counter(25)
+123 *Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.delay(25)
+124 *Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.prev_avm_read(48)
+125 *Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.prev_avm_write(48)
+126 *Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.prev_avm_writedata(48)
+127 *Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.prev_avm_address(48)
+128 *Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.m1.n_r(48)
+129 *Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.m1.n_w(48)
+130 *Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.m1.e_r(48)
+131 *Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.m1.e_w(48)
+132 *Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.m1.enc_r(48)
+133 *Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.m1.enc_w(48)
+134 *Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.m1.dec_r(48)
+135 *Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.m1.dec_w(48)
+136 *Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.m1.state_r(48)
+137 *Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.m1.state_w(48)
+138 *Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.m1.bytes_counter_r(48)
+139 *Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.m1.bytes_counter_w(48)
+140 *Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.m1.avm_address_r(48)
+141 *Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.m1.avm_address_w(48)
+142 *Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.m1.avm_read_r(48)
+143 *Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.m1.avm_read_w(48)
+144 *Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.m1.avm_write_r(48)
+145 *Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.m1.avm_write_w(48)
+146 *Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.m1.waiting_r(48)
+147 *Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.m1.waiting_w(48)
+148 *Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.m1.rsa_start_r(48)
+149 *Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.m1.rsa_start_w(48)
+150 *Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.m1.rsa_finished(48)
+151 *Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.m1.rsa_dec(48)
+152 *Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.m1.avm_rst(36)
+153 *Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.m1.avm_clk(36)
+154 *Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.m1.avm_address(36)
+155 *Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.m1.avm_read(36)
+156 *Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.m1.avm_readdata(36)
+157 *Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.m1.avm_write(36)
+158 *Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.m1.avm_writedata(36)
+159 *Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.m1.avm_waitrequest(36)
+160 *Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.m1.rsa256_core.state_r(48)
+161 *Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.m1.rsa256_core.state_w(48)
+162 *Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.m1.rsa256_core.ME_counter_r(48)
+163 *Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.m1.rsa256_core.ME_counter_w(48)
+164 *Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.m1.rsa256_core.MA_counter_r(48)
+165 *Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.m1.rsa256_core.MA_counter_w(48)
+166 *Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.m1.rsa256_core.a_w(48)
+167 *Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.m1.rsa256_core.a_r(48)
+168 *Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.m1.rsa256_core.e_w(48)
+169 *Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.m1.rsa256_core.e_r(48)
+170 *Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.m1.rsa256_core.n_w(48)
+171 *Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.m1.rsa256_core.n_r(48)
+172 *Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.m1.rsa256_core.V_i_r(48)
+173 *Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.m1.rsa256_core.V_i_w(48)
+174 *Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.m1.rsa256_core.V_T_r(48)
+175 *Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.m1.rsa256_core.V_T_w(48)
+176 *Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.m1.rsa256_core.T_r(48)
+177 *Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.m1.rsa256_core.T_w(48)
+178 *Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.m1.rsa256_core.S_r(48)
+179 *Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.m1.rsa256_core.S_w(48)
+180 *Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.m1.rsa256_core.preprop_S_r(48)
+181 *Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.m1.rsa256_core.preprop_S_w(48)
+182 *Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.m1.rsa256_core.preprop_T_r(48)
+183 *Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.m1.rsa256_core.preprop_T_w(48)
+184 *Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.m1.rsa256_core.q_i(48)
+185 *Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.m1.rsa256_core.q_T(48)
+186 *Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.m1.rsa256_core.finished_r(48)
+187 *Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.m1.rsa256_core.finished_w(48)
+188 *Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.m1.rsa256_core.i_clk(36)
+189 *Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.m1.rsa256_core.i_rst(36)
+190 *Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.m1.rsa256_core.i_start(36)
+191 *Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.m1.rsa256_core.i_a(36)
+192 *Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.m1.rsa256_core.i_e(36)
+193 *Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.m1.rsa256_core.i_n(36)
+194 *Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.m1.rsa256_core.o_a_pow_e(36)
+195 *Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.m1.rsa256_core.o_finished(36)
+196 *Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.m1.StartRead.addr(48)
+197 *Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.m1.StartWrite.addr(48)
+198 *Verdi3* : End of traversing.
+199 fsdbDumpvars traverse var: profile - 
+          CPU/Mem usage: 0.020 sys,  0.030 user,  229.02M sys,  0.00M vm
+                   incr: 0.000 sys,  0.000 user,  3.60M sys,  0.00M vm
+                   accu: 0.000 sys,  0.000 user,  3.60M sys,  0.00M vm
+              accu incr: 0.000 sys,  0.000 user,  3.60M sys,  0.00M vm
+
+          Count usage: 0 var,  0 idcode,  0 callback
+                 incr: 0 var,  0 idcode,  0 callback
+                 accu: 0 var,  0 idcode,  0 callback
+            accu incr: 0 var,  0 idcode,  0 callback
+200 VC callback profile - scalar:0 vector:0
+201 Wed Apr 13 16:04:44 2016
+202 fsdbDumpvars: profile - 
+          CPU/Mem usage: 0.020 sys,  0.030 user,  229.02M sys,  0.00M vm
+                   incr: 0.000 sys,  0.000 user,  0.00M sys,  0.00M vm
+                   accu: 0.000 sys,  0.000 user,  3.60M sys,  0.00M vm
+              accu incr: 0.000 sys,  0.000 user,  0.00M sys,  0.00M vm
+
+          Count usage: 0 var,  0 idcode,  0 callback
+                 incr: 0 var,  0 idcode,  0 callback
+                 accu: 0 var,  0 idcode,  0 callback
+            accu incr: 0 var,  0 idcode,  0 callback
+203 VC callback profile - scalar:0 vector:0
+204 Wed Apr 13 16:04:44 2016
+205 End of simulation at 6703850
+206 VC callback profile - scalar:0 vector:0
+207 Wed Apr 13 16:04:44 2016
+208 Parallel profile    -  Flush:1 ProduceWait:0 ConsumerWait:0 BlockUsed:0
+209 SimExit
+210 Sim process exit
