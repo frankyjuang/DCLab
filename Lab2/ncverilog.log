@@ -1,0 +1,263 @@
+ncverilog(64): 12.20-s012: (c) Copyright 1995-2013 Cadence Design Systems, Inc.
+TOOL:	ncverilog	12.20-s012: Started on Apr 13, 2016 at 16:04:44 CST
+ncverilog
+	tb_simple_master.sv
+	Rsa256Wrapper.sv
+	Rsa256Core.sv
+Recompiling... reason: file './Rsa256Core.sv' is newer than expected.
+	expected: Wed Apr 13 15:44:51 2016
+	actual:   Wed Apr 13 16:04:43 2016
+file: Rsa256Core.sv
+	module worklib.Rsa256Core:sv
+		errors: 0, warnings: 0
+		Caching library 'worklib' ....... Done
+	Elaborating the design hierarchy:
+	Building instance overlay tables: .................... Done
+	Generating native compiled code:
+		worklib.Rsa256Core:sv <0x3c6246e7>
+			streams:   5, words: 16816
+	Loading native compiled code:     .................... Done
+	Building instance specific data structures.
+	Design hierarchy summary:
+		                   Instances  Unique
+		Modules:                   3       3
+		Registers:                70      70
+		Scalar wires:             11       -
+		Vectored wires:           11       -
+		Always blocks:             6       6
+		Initial blocks:            3       3
+		Cont. assignments:         4       8
+		Pseudo assignments:       11      11
+		Simulation timescale:  100ps
+	Writing initial simulation snapshot: worklib.tb:sv
+Loading snapshot worklib.tb:sv .................... Done
+*Verdi3* Loading libsscore_ius122.so
+*Verdi3* : Enable Parallel Dumping.
+ncsim> source /opt/CAD/INCISIV/cur/tools/inca/files/ncsimrc
+ncsim> run
+FSDB Dumper for IUS, Release Verdi3_2013.07, Linux x86_64/64bit, 07/04/2013
+(C) 1996 - 2013 by Synopsys, Inc.
+*Verdi3* FSDB WARNING: The FSDB file already exists. Overwriting the FSDB file may crash the programs that are using this file.
+*Verdi3* : Create FSDB file 'lab2-2.fsdb'
+*Verdi3* : Begin traversing the scopes, layer (0).
+*Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.avm_rst(48)
+*Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.avm_clk(48)
+*Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.avm_address(48)
+*Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.avm_read(48)
+*Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.avm_readdata(48)
+*Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.avm_write(48)
+*Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.avm_writedata(48)
+*Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.avm_waitrequest(48)
+*Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.nread(25)
+*Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.nwrite(25)
+*Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.counter(25)
+*Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.delay(25)
+*Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.prev_avm_read(48)
+*Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.prev_avm_write(48)
+*Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.prev_avm_writedata(48)
+*Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.prev_avm_address(48)
+*Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.m1.n_r(48)
+*Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.m1.n_w(48)
+*Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.m1.e_r(48)
+*Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.m1.e_w(48)
+*Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.m1.enc_r(48)
+*Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.m1.enc_w(48)
+*Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.m1.dec_r(48)
+*Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.m1.dec_w(48)
+*Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.m1.state_r(48)
+*Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.m1.state_w(48)
+*Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.m1.bytes_counter_r(48)
+*Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.m1.bytes_counter_w(48)
+*Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.m1.avm_address_r(48)
+*Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.m1.avm_address_w(48)
+*Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.m1.avm_read_r(48)
+*Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.m1.avm_read_w(48)
+*Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.m1.avm_write_r(48)
+*Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.m1.avm_write_w(48)
+*Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.m1.waiting_r(48)
+*Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.m1.waiting_w(48)
+*Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.m1.rsa_start_r(48)
+*Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.m1.rsa_start_w(48)
+*Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.m1.rsa_finished(48)
+*Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.m1.rsa_dec(48)
+*Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.m1.avm_rst(36)
+*Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.m1.avm_clk(36)
+*Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.m1.avm_address(36)
+*Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.m1.avm_read(36)
+*Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.m1.avm_readdata(36)
+*Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.m1.avm_write(36)
+*Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.m1.avm_writedata(36)
+*Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.m1.avm_waitrequest(36)
+*Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.m1.rsa256_core.state_r(48)
+*Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.m1.rsa256_core.state_w(48)
+*Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.m1.rsa256_core.ME_counter_r(48)
+*Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.m1.rsa256_core.ME_counter_w(48)
+*Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.m1.rsa256_core.MA_counter_r(48)
+*Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.m1.rsa256_core.MA_counter_w(48)
+*Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.m1.rsa256_core.a_w(48)
+*Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.m1.rsa256_core.a_r(48)
+*Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.m1.rsa256_core.e_w(48)
+*Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.m1.rsa256_core.e_r(48)
+*Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.m1.rsa256_core.n_w(48)
+*Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.m1.rsa256_core.n_r(48)
+*Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.m1.rsa256_core.V_i_r(48)
+*Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.m1.rsa256_core.V_i_w(48)
+*Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.m1.rsa256_core.V_T_r(48)
+*Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.m1.rsa256_core.V_T_w(48)
+*Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.m1.rsa256_core.T_r(48)
+*Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.m1.rsa256_core.T_w(48)
+*Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.m1.rsa256_core.S_r(48)
+*Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.m1.rsa256_core.S_w(48)
+*Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.m1.rsa256_core.preprop_S_r(48)
+*Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.m1.rsa256_core.preprop_S_w(48)
+*Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.m1.rsa256_core.preprop_T_r(48)
+*Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.m1.rsa256_core.preprop_T_w(48)
+*Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.m1.rsa256_core.q_i(48)
+*Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.m1.rsa256_core.q_T(48)
+*Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.m1.rsa256_core.finished_r(48)
+*Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.m1.rsa256_core.finished_w(48)
+*Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.m1.rsa256_core.i_clk(36)
+*Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.m1.rsa256_core.i_rst(36)
+*Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.m1.rsa256_core.i_start(36)
+*Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.m1.rsa256_core.i_a(36)
+*Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.m1.rsa256_core.i_e(36)
+*Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.m1.rsa256_core.i_n(36)
+*Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.m1.rsa256_core.o_a_pow_e(36)
+*Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.m1.rsa256_core.o_finished(36)
+*Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.m1.StartRead.addr(48)
+*Verdi3* WARNING: [NoReadAccess][FilterOut]Name:tb.m1.StartWrite.addr(48)
+*Verdi3* : End of traversing.
+R{         1} [00000008]
+R{         2} [00000000]
+R{         3} [00000000]
+R{         4} [00000000]
+R{         5} [00000000]
+R{         6} [00000000]
+R{         7} [00000000]
+R{         8} [00000000]
+R{         9} [00000000]
+R{        10} [00000000]
+R{        11} [00000000]
+R{        12} [00000000]
+R{        13} [00000000]
+R{        14} [00000000]
+R{        15} [00000000]
+R{        16} [00000000]
+R{        17} [00000000]
+R{        18} [00000000]
+R{        19} [00000000]
+R{        20} [00000000]
+R{        21} [00000000]
+R{        22} [00000000]
+R{        23} [00000000]
+R{        24} [00000000]
+R{        25} [00000000]
+R{        26} [00000000]
+R{        27} [00000000]
+R{        28} [00000000]
+R{        29} [00000000]
+R{        30} [00000000]
+R{        31} [00000000]
+R{        32} [00000000]
+R{        33} [00000000]
+R{        34} [00000000]
+R{        35} [00000000]
+R{        36} [00000000]
+R{        37} [00000000]
+R{        38} [00000000]
+R{        39} [00000000]
+R{        40} [00000000]
+R{        41} [00000000]
+R{        42} [00000000]
+R{        43} [00000000]
+R{        44} [00000000]
+R{        45} [00000000]
+R{        46} [00000000]
+R{        47} [00000000]
+R{        48} [00000000]
+R{        49} [00000000]
+R{        50} [00000000]
+R{        51} [00000000]
+R{        52} [00000000]
+R{        53} [00000000]
+R{        54} [00000000]
+R{        55} [00000000]
+R{        56} [00000000]
+R{        57} [00000000]
+R{        58} [00000000]
+R{        59} [00000000]
+R{        60} [00000000]
+R{        61} [00000000]
+R{        62} [00000000]
+R{        63} [00000000]
+R{        64} [00000000]
+R{        65} [00000000]
+R{        66} [00000000]
+R{        67} [00000000]
+R{        68} [00000000]
+R{        69} [00000000]
+R{        70} [00000000]
+R{        71} [00000000]
+R{        72} [00000000]
+R{        73} [00000000]
+R{        74} [00000000]
+R{        75} [00000000]
+R{        76} [00000000]
+R{        77} [00000000]
+R{        78} [00000000]
+R{        79} [00000000]
+R{        80} [00000000]
+R{        81} [00000000]
+R{        82} [00000000]
+R{        83} [00000000]
+R{        84} [00000000]
+R{        85} [00000000]
+R{        86} [00000000]
+R{        87} [00000000]
+R{        88} [00000000]
+R{        89} [00000000]
+R{        90} [00000000]
+R{        91} [00000000]
+R{        92} [00000000]
+R{        93} [00000000]
+R{        94} [00000000]
+R{        95} [00000000]
+R{        96} [00000000]
+R{        97} [00000000]
+R{        98} [00000000]
+R{        99} [00000008]
+W{         1} [00000004] = 00000000
+W{         2} [00000004] = 00000000
+W{         3} [00000004] = 00000000
+W{         4} [00000004] = 00000000
+W{         5} [00000004] = 00000000
+W{         6} [00000004] = 00000000
+W{         7} [00000004] = 00000000
+W{         8} [00000004] = 00000000
+W{         9} [00000004] = 00000000
+W{        10} [00000004] = 00000000
+W{        11} [00000004] = 00000000
+W{        12} [00000004] = 00000000
+W{        13} [00000004] = 00000000
+W{        14} [00000004] = 00000000
+W{        15} [00000004] = 00000000
+W{        16} [00000004] = 00000000
+W{        17} [00000004] = 00000000
+W{        18} [00000004] = 00000000
+W{        19} [00000004] = 00000000
+W{        20} [00000004] = 00000000
+W{        21} [00000004] = 00000000
+W{        22} [00000004] = 00000000
+W{        23} [00000004] = 00000000
+W{        24} [00000004] = 00000000
+W{        25} [00000004] = 00000000
+W{        26} [00000004] = 00000000
+W{        27} [00000004] = 00000000
+W{        28} [00000004] = 00000000
+W{        29} [00000004] = 00000000
+W{        30} [00000004] = 00000000
+W{        31} [00000004] = 00000000
+Simulation complete via $finish(1) at time 670385 NS + 0
+./tb_simple_master.sv:77 						$finish;
+ncsim> exit
+TOOL:	ncverilog	12.20-s012: Exiting on Apr 13, 2016 at 16:04:44 CST  (total: 00:00:00)

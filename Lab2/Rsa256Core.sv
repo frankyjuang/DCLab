@@ -135,6 +135,7 @@ module Rsa256Core(
 			state_r <= state_w;
 		end
 		/*
+        $display("finished: %d", finished_r);
 		$display("state: %d", state_w);
 		$display("MA: %d", MA_counter_w);
 		$display("ME: %d", ME_counter_w);
