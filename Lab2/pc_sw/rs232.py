@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 from serial import Serial, EIGHTBITS, PARITY_NONE, STOPBITS_ONE
-from sys import argv
+from sys import argv, exit
 
 assert len(argv) == 2
 s = Serial(
@@ -18,6 +18,8 @@ fp_dec = open('dec.bin', 'wb')
 assert fp_key and fp_enc and fp_dec
 
 key = fp_key.read(64)
+print(key)
+exit()
 enc = fp_enc.read()
 assert len(enc) % 32 == 0
 

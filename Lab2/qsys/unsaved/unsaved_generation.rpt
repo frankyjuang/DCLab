@@ -1,0 +1,65 @@
+Info: Starting: Create block symbol file (.bsf)
+Info: qsys-generate /home/jfj/DCLab/Lab2/qsys/unsaved.qsys --block-symbol-file --output-directory=/home/jfj/DCLab/Lab2/qsys/unsaved --family="Cyclone IV E" --part=EP4CE10E22A7
+Progress: Loading qsys/unsaved.qsys
+Progress: Reading input file
+Progress: Adding altpll_0 [altpll 15.1]
+Progress: Parameterizing module altpll_0
+Progress: Adding clk_0 [clock_source 15.1]
+Progress: Parameterizing module clk_0
+Progress: Adding new_component_0 [new_component 1.0]
+Progress: Parameterizing module new_component_0
+Progress: Adding uart_0 [altera_avalon_uart 15.1]
+Progress: Parameterizing module uart_0
+Progress: Building connections
+Progress: Parameterizing connections
+Progress: Validating
+Progress: Done reading input file
+Warning: unsaved.altpll_0: altpll_0.areset_conduit must be exported, or connected to a matching conduit.
+Warning: unsaved.altpll_0: altpll_0.locked_conduit must be exported, or connected to a matching conduit.
+Warning: unsaved.altpll_0: altpll_0.phasedone_conduit must be exported, or connected to a matching conduit.
+Warning: unsaved.uart_0: Interrupt sender uart_0.irq is not connected to an interrupt receiver
+Warning: unsaved.altpll_0: altpll_0.pll_slave must be connected to an Avalon-MM master
+Info: qsys-generate succeeded.
+Info: Finished: Create block symbol file (.bsf)
+Info: 
+Info: Starting: Create HDL design files for synthesis
+Info: qsys-generate /home/jfj/DCLab/Lab2/qsys/unsaved.qsys --synthesis=VERILOG --output-directory=/home/jfj/DCLab/Lab2/qsys/unsaved/synthesis --family="Cyclone IV E" --part=EP4CE10E22A7
+Progress: Loading qsys/unsaved.qsys
+Progress: Reading input file
+Progress: Adding altpll_0 [altpll 15.1]
+Progress: Parameterizing module altpll_0
+Progress: Adding clk_0 [clock_source 15.1]
+Progress: Parameterizing module clk_0
+Progress: Adding new_component_0 [new_component 1.0]
+Progress: Parameterizing module new_component_0
+Progress: Adding uart_0 [altera_avalon_uart 15.1]
+Progress: Parameterizing module uart_0
+Progress: Building connections
+Progress: Parameterizing connections
+Progress: Validating
+Progress: Done reading input file
+Warning: unsaved.altpll_0: altpll_0.areset_conduit must be exported, or connected to a matching conduit.
+Warning: unsaved.altpll_0: altpll_0.locked_conduit must be exported, or connected to a matching conduit.
+Warning: unsaved.altpll_0: altpll_0.phasedone_conduit must be exported, or connected to a matching conduit.
+Warning: unsaved.uart_0: Interrupt sender uart_0.irq is not connected to an interrupt receiver
+Warning: unsaved.altpll_0: altpll_0.pll_slave must be connected to an Avalon-MM master
+Info: unsaved: Generating unsaved "unsaved" for QUARTUS_SYNTH
+Info: Interconnect is inserted between master new_component_0.avalon_master and slave uart_0.s1 because the master has address signal 5 bit wide, but the slave is 3 bit wide.
+Info: Interconnect is inserted between master new_component_0.avalon_master and slave uart_0.s1 because the master has readdata signal 32 bit wide, but the slave is 16 bit wide.
+Info: Interconnect is inserted between master new_component_0.avalon_master and slave uart_0.s1 because the master has writedata signal 32 bit wide, but the slave is 16 bit wide.
+Info: Interconnect is inserted between master new_component_0.avalon_master and slave uart_0.s1 because the master has waitrequest signal 1 bit wide, but the slave is 0 bit wide.
+Warning: unsaved: "No matching role found for uart_0:s1:dataavailable (dataavailable)"
+Warning: unsaved: "No matching role found for uart_0:s1:readyfordata (readyfordata)"
+Info: altpll_0: "unsaved" instantiated altpll "altpll_0"
+Info: new_component_0: "unsaved" instantiated new_component "new_component_0"
+Info: uart_0: Starting RTL generation for module 'unsaved_uart_0'
+Info: uart_0:   Generation command is [exec /home/jfj/altera/15.1/quartus/linux64/perl/bin/perl -I /home/jfj/altera/15.1/quartus/linux64/perl/lib -I /home/jfj/altera/15.1/quartus/sopc_builder/bin/europa -I /home/jfj/altera/15.1/quartus/sopc_builder/bin/perl_lib -I /home/jfj/altera/15.1/quartus/sopc_builder/bin -I /home/jfj/altera/15.1/quartus/../ip/altera/sopc_builder_ip/common -I /home/jfj/altera/15.1/quartus/../ip/altera/sopc_builder_ip/altera_avalon_uart -- /home/jfj/altera/15.1/quartus/../ip/altera/sopc_builder_ip/altera_avalon_uart/generate_rtl.pl --name=unsaved_uart_0 --dir=/tmp/alt6904_7756356677155674915.dir/0004_uart_0_gen/ --quartus_dir=/home/jfj/altera/15.1/quartus --verilog --config=/tmp/alt6904_7756356677155674915.dir/0004_uart_0_gen//unsaved_uart_0_component_configuration.pl  --do_build_sim=0  ]
+Info: uart_0: Done RTL generation for module 'unsaved_uart_0'
+Info: uart_0: "unsaved" instantiated altera_avalon_uart "uart_0"
+Info: mm_interconnect_0: "unsaved" instantiated altera_mm_interconnect "mm_interconnect_0"
+Info: rst_controller: "unsaved" instantiated altera_reset_controller "rst_controller"
+Info: new_component_0_avalon_master_translator: "mm_interconnect_0" instantiated altera_merlin_master_translator "new_component_0_avalon_master_translator"
+Info: uart_0_s1_translator: "mm_interconnect_0" instantiated altera_merlin_slave_translator "uart_0_s1_translator"
+Info: unsaved: Done "unsaved" with 8 modules, 11 files
+Info: qsys-generate succeeded.
+Info: Finished: Create HDL design files for synthesis
