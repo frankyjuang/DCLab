@@ -98,20 +98,33 @@ module Rsa256Wrapper(
                                 end
             S_GET_DATA:         begin
                                     if (avm_waitrequest == 1'b0) begin
+                                        //$display("readdata: %d", avm_readdata[7:0]);
                                         if (bytes_counter_r < 32) begin
                                             n_w[7:0] = avm_readdata[7:0];
-                                            n_w = n_r << 8;
+                                            if (bytes_counter_r < 31) begin
+                                                n_w = n_w << 8;
+                                            end
                                         end else if (bytes_counter_r < 64) begin
                                             e_w[7:0] = avm_readdata[7:0];
-                                            e_w = e_r << 8;
+                                            if (bytes_counter_r < 63) begin
+                                                e_w = e_w << 8;
+                                            end
                                         end else if (bytes_counter_r < 96) begin
                                             enc_w[7:0] = avm_readdata[7:0];
-                                            enc_w = enc_r << 8;
-                                        end else if (bytes_counter_w >= 96) begin
+                                            if (bytes_counter_r < 95) begin
+                                                enc_w = enc_w << 8;
+                                            end
+                                        end else if (bytes_counter_r >= 96) begin
                                             state_w = S_WAIT_CALCULATE;
                                             avm_read_w = 1'b0;
                                             rsa_start_w = 1'b1;
                                         end
+                                        //*
+                                        $display("n: %d", n_w);
+                                        $display("e: %d", e_w);
+                                        $display("enc: %d", enc_w);
+                                        $display("counter: %d", bytes_counter_r);
+                                        //*/
                                         bytes_counter_w += 1;
                                     end
                                 end
@@ -158,6 +171,9 @@ module Rsa256Wrapper(
             //$display("Wrapper state: %d", state_r);
             //$display("avm_read: %d", avm_read);
             //$display("avm_readdata: %d", avm_readdata);
+            //$display("n: %d", n_r);
+            //$display("e: %d", e_r);
+            //$display("waiting: %d", waiting_r);
 			n_r <= n_w;
 			e_r <= e_w;
 			enc_r <= enc_w;
