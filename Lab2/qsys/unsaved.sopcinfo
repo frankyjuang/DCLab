@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <EnsembleReport name="unsaved" kind="unsaved" version="1.0" fabric="QSYS">
  <!-- Format version 15.1 185 (Future versions may contain additional information.) -->
- <!-- 2016.04.13.14:15:50 -->
+ <!-- 2016.04.13.16:29:23 -->
  <!-- A collection of modules and connections -->
  <parameter name="AUTO_GENERATION_ID">
   <type>java.lang.Integer</type>
-  <value>1460556950</value>
+  <value>1460564963</value>
   <derived>false</derived>
   <enabled>true</enabled>
   <visible>false</visible>
@@ -32,7 +32,7 @@
  </parameter>
  <parameter name="AUTO_DEVICE">
   <type>java.lang.String</type>
-  <value>EP4CE10E22A7</value>
+  <value>EP4CE115F29C7</value>
   <derived>false</derived>
   <enabled>true</enabled>
   <visible>false</visible>

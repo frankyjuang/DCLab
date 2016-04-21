@@ -27,7 +27,6 @@ module Rsa256Core(
 	logic [258:0] 	S_r, S_w;
 	logic [258:0]	preprop_S_r, preprop_S_w;
 	logic [258:0]	preprop_T_r, preprop_T_w;
-	logic  			q_i, q_T;
 	logic 			finished_r, finished_w;
 
 	assign o_a_pow_e 	= S_r[255:0];
@@ -88,12 +87,10 @@ module Rsa256Core(
 							// if (e_i == 1) then calculate S <- MA(S,T)
 							if (e_r[ME_counter_r] == 1) begin
 								// check last bit of V_i+a_i*B
-								q_i = (V_i_r + S_r[MA_counter_r] * T_r) % 2;
-								V_i_w = (V_i_r + S_r[MA_counter_r] * T_r + q_i * n_r) / 2;
+								V_i_w = (V_i_r + S_r[MA_counter_r] * T_r + ((V_i_r + S_r[MA_counter_r] * T_r) % 2) * n_r) / 2;
 							end
 							// calculate T <- MA(T,T)
-							q_T = (V_T_r + T_r[MA_counter_r] * T_r) % 2;
-							V_T_w = (V_T_r + T_r[MA_counter_r] * T_r + q_T * n_r) / 2;
+							V_T_w = (V_T_r + T_r[MA_counter_r] * T_r + ((V_T_r + T_r[MA_counter_r] * T_r) % 2) * n_r) / 2;
 							// increment MA counter in for loop
 							MA_counter_w = MA_counter_r + 1;
 						end else begin

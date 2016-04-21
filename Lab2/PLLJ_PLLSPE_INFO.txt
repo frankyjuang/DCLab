@@ -1,0 +1,5 @@
+PLL_Name	unsaved:my_qsys|unsaved_altpll_0:altpll_0|unsaved_altpll_0_altpll_s342:sd1|pll7
+PLLJITTER	30
+PLLSPEmax	84
+PLLSPEmin	-53
+

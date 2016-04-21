@@ -27,7 +27,6 @@ module Rsa256Core(
 	logic [258:0] 	S_r, S_w;
 	logic [258:0]	preprop_S_r, preprop_S_w;
 	logic [258:0]	preprop_T_r, preprop_T_w;
-	logic  			q_i, q_T;
 	logic 			finished_r, finished_w;
 
 	assign o_a_pow_e 	= S_r[255:0];
@@ -88,12 +87,10 @@ module Rsa256Core(
 							// if (e_i == 1) then calculate S <- MA(S,T)
 							if (e_r[ME_counter_r] == 1) begin
 								// check last bit of V_i+a_i*B
-								q_i = (V_i_r + S_r[MA_counter_r] * T_r) % 2;
-								V_i_w = (V_i_r + S_r[MA_counter_r] * T_r + q_i * n_r) / 2;
+								V_i_w = (V_i_r + S_r[MA_counter_r] * T_r + ((V_i_r + S_r[MA_counter_r] * T_r) % 2) * n_r) / 2;
 							end
 							// calculate T <- MA(T,T)
-							q_T = (V_T_r + T_r[MA_counter_r] * T_r) % 2;
-							V_T_w = (V_T_r + T_r[MA_counter_r] * T_r + q_T * n_r) / 2;
+							V_T_w = (V_T_r + T_r[MA_counter_r] * T_r + ((V_T_r + T_r[MA_counter_r] * T_r) % 2) * n_r) / 2;
 							// increment MA counter in for loop
 							MA_counter_w = MA_counter_r + 1;
 						end else begin
@@ -126,25 +123,13 @@ module Rsa256Core(
 						end
 					end
 		endcase
+		if (i_rst == 1'b1) begin
+			state_w = RESET;
+        end
 	end
 
-	always_ff @(posedge i_clk or posedge i_rst) begin
-		if (i_rst == 1'b1) begin
-			state_r <= RESET;
-		end else begin
-			state_r <= state_w;
-		end
-		/*
-		$display("state: %d", state_w);
-		$display("MA: %d", MA_counter_w);
-		$display("ME: %d", ME_counter_w);
-		$display("a: %b", a_r);
-		$display("S: %d", S_w);
-		$display("V: %d",V_i_w);
-		$display("T: %d",T_w);
-		$display("prep_S: %d", preprop_S_w);
-		$display("prep_T: %d", preprop_T_w);
-		*/
+	always_ff @(posedge i_clk) begin
+		state_r <= state_w;
 		a_r <= a_w;
 		e_r <= e_w;
 		n_r <= n_w;

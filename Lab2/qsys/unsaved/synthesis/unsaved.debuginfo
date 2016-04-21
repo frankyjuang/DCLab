@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <EnsembleReport name="unsaved" kind="system" version="15.1" fabric="QSYS">
  <!-- Format version 15.1 185 (Future versions may contain additional information.) -->
- <!-- 2016.04.13.14:16:16 -->
+ <!-- 2016.04.13.16:29:49 -->
  <!-- A collection of modules and connections -->
  <parameter name="clockCrossingAdapter">
   <type>com.altera.sopcmodel.ensemble.EClockAdapter</type>
@@ -13,7 +13,7 @@
  </parameter>
  <parameter name="device">
   <type>java.lang.String</type>
-  <value>EP4CE10E22A7</value>
+  <value>EP4CE115F29C7</value>
   <derived>false</derived>
   <enabled>true</enabled>
   <visible>true</visible>
@@ -53,7 +53,7 @@
  </parameter>
  <parameter name="generationId">
   <type>int</type>
-  <value>1460556950</value>
+  <value>1460564963</value>
   <derived>false</derived>
   <enabled>true</enabled>
   <visible>true</visible>
@@ -3796,7 +3796,7 @@ the requested settings for a module instance. -->
   </parameter>
   <parameter name="AUTO_DEVICE">
    <type>java.lang.String</type>
-   <value>EP4CE10E22A7</value>
+   <value>EP4CE115F29C7</value>
    <derived>false</derived>
    <enabled>true</enabled>
    <visible>false</visible>
@@ -5967,5 +5967,5 @@ parameters are a RESULT of the module parameters. -->
   <version>15.1</version>
  </plugin>
  <reportVersion>15.1 185</reportVersion>
- <uniqueIdentifier>54A05087E7A6000001540FFA6E89</uniqueIdentifier>
+ <uniqueIdentifier>54A05087E7A6000001541074B344</uniqueIdentifier>
 </EnsembleReport>

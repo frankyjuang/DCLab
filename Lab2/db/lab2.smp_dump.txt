@@ -1,0 +1,20 @@
+
+State Machine - |DE2_115|unsaved:my_qsys|Rsa256Wrapper:new_component_0|waiting_r
+Name waiting_r.WAITING_READ waiting_r.WAITING_NOTHING waiting_r.WAITING_WRITE 
+waiting_r.WAITING_READ 0 0 0 
+waiting_r.WAITING_WRITE 1 0 1 
+waiting_r.WAITING_NOTHING 1 1 0 
+
+State Machine - |DE2_115|unsaved:my_qsys|Rsa256Wrapper:new_component_0|state_r
+Name state_r.S_SEND_DATA state_r.S_WAIT_CALCULATE state_r.S_GET_DATA state_r.S_GET_KEY 
+state_r.S_GET_KEY 0 0 0 0 
+state_r.S_GET_DATA 0 0 1 1 
+state_r.S_WAIT_CALCULATE 0 1 0 1 
+state_r.S_SEND_DATA 1 0 0 1 
+
+State Machine - |DE2_115|unsaved:my_qsys|Rsa256Wrapper:new_component_0|Rsa256Core:rsa256_core|state_r
+Name state_r.MA state_r.INC state_r.PREPROP state_r.RESET 
+state_r.RESET 0 0 0 0 
+state_r.PREPROP 0 0 1 1 
+state_r.INC 0 1 0 1 
+state_r.MA 1 0 0 1 

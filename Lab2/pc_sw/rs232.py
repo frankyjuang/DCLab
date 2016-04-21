@@ -18,8 +18,6 @@ fp_dec = open('dec.bin', 'wb')
 assert fp_key and fp_enc and fp_dec
 
 key = fp_key.read(64)
-print(key)
-exit()
 enc = fp_enc.read()
 assert len(enc) % 32 == 0
 

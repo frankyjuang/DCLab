@@ -1,5 +1,5 @@
 Info: Starting: Create block symbol file (.bsf)
-Info: qsys-generate /home/jfj/DCLab/Lab2/qsys/unsaved.qsys --block-symbol-file --output-directory=/home/jfj/DCLab/Lab2/qsys/unsaved --family="Cyclone IV E" --part=EP4CE10E22A7
+Info: qsys-generate /home/jfj/DCLab/Lab2/qsys/unsaved.qsys --block-symbol-file --output-directory=/home/jfj/DCLab/Lab2/qsys/unsaved --family="Cyclone IV E" --part=EP4CE115F29C7
 Progress: Loading qsys/unsaved.qsys
 Progress: Reading input file
 Progress: Adding altpll_0 [altpll 15.1]
@@ -23,7 +23,7 @@ Info: qsys-generate succeeded.
 Info: Finished: Create block symbol file (.bsf)
 Info: 
 Info: Starting: Create HDL design files for synthesis
-Info: qsys-generate /home/jfj/DCLab/Lab2/qsys/unsaved.qsys --synthesis=VERILOG --output-directory=/home/jfj/DCLab/Lab2/qsys/unsaved/synthesis --family="Cyclone IV E" --part=EP4CE10E22A7
+Info: qsys-generate /home/jfj/DCLab/Lab2/qsys/unsaved.qsys --synthesis=VERILOG --output-directory=/home/jfj/DCLab/Lab2/qsys/unsaved/synthesis --family="Cyclone IV E" --part=EP4CE115F29C7
 Progress: Loading qsys/unsaved.qsys
 Progress: Reading input file
 Progress: Adding altpll_0 [altpll 15.1]
@@ -53,7 +53,7 @@ Warning: unsaved: "No matching role found for uart_0:s1:readyfordata (readyforda
 Info: altpll_0: "unsaved" instantiated altpll "altpll_0"
 Info: new_component_0: "unsaved" instantiated new_component "new_component_0"
 Info: uart_0: Starting RTL generation for module 'unsaved_uart_0'
-Info: uart_0:   Generation command is [exec /home/jfj/altera/15.1/quartus/linux64/perl/bin/perl -I /home/jfj/altera/15.1/quartus/linux64/perl/lib -I /home/jfj/altera/15.1/quartus/sopc_builder/bin/europa -I /home/jfj/altera/15.1/quartus/sopc_builder/bin/perl_lib -I /home/jfj/altera/15.1/quartus/sopc_builder/bin -I /home/jfj/altera/15.1/quartus/../ip/altera/sopc_builder_ip/common -I /home/jfj/altera/15.1/quartus/../ip/altera/sopc_builder_ip/altera_avalon_uart -- /home/jfj/altera/15.1/quartus/../ip/altera/sopc_builder_ip/altera_avalon_uart/generate_rtl.pl --name=unsaved_uart_0 --dir=/tmp/alt6904_7756356677155674915.dir/0004_uart_0_gen/ --quartus_dir=/home/jfj/altera/15.1/quartus --verilog --config=/tmp/alt6904_7756356677155674915.dir/0004_uart_0_gen//unsaved_uart_0_component_configuration.pl  --do_build_sim=0  ]
+Info: uart_0:   Generation command is [exec /home/jfj/altera/15.1/quartus/linux64/perl/bin/perl -I /home/jfj/altera/15.1/quartus/linux64/perl/lib -I /home/jfj/altera/15.1/quartus/sopc_builder/bin/europa -I /home/jfj/altera/15.1/quartus/sopc_builder/bin/perl_lib -I /home/jfj/altera/15.1/quartus/sopc_builder/bin -I /home/jfj/altera/15.1/quartus/../ip/altera/sopc_builder_ip/common -I /home/jfj/altera/15.1/quartus/../ip/altera/sopc_builder_ip/altera_avalon_uart -- /home/jfj/altera/15.1/quartus/../ip/altera/sopc_builder_ip/altera_avalon_uart/generate_rtl.pl --name=unsaved_uart_0 --dir=/tmp/alt6904_2119106327960916126.dir/0005_uart_0_gen/ --quartus_dir=/home/jfj/altera/15.1/quartus --verilog --config=/tmp/alt6904_2119106327960916126.dir/0005_uart_0_gen//unsaved_uart_0_component_configuration.pl  --do_build_sim=0  ]
 Info: uart_0: Done RTL generation for module 'unsaved_uart_0'
 Info: uart_0: "unsaved" instantiated altera_avalon_uart "uart_0"
 Info: mm_interconnect_0: "unsaved" instantiated altera_mm_interconnect "mm_interconnect_0"
