@@ -66,15 +66,15 @@ module Rsa256Core(
 			PREPROP:begin
 						// perform T <- a * 2^256 mod n
 						if (MA_counter_r <= 255) begin
-							if (a_r[MA_counter_r] == 1) begin
-								// perform s <- (s + t) mod n
-								preprop_S_w = (preprop_S_r + preprop_T_r) % n_r;
-							end
 							// perform t <- (t + t) mod n
-							preprop_T_w = (2 * preprop_T_r) % n_r;
+                     if (2 * preprop_T_r >= n_r) begin
+								 preprop_T_w = 2 * preprop_T_r - n_r;
+                     end else begin
+                         preprop_T_w = 2 * preprop_T_r;
+                     end
 							MA_counter_w = MA_counter_r + 1;
 						end else begin
-							T_w = preprop_S_r;
+							T_w = preprop_T_r;
 							MA_counter_w = 0;
 							state_w = MA;
 							V_i_w = 0;

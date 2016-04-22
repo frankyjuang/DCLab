@@ -55,9 +55,11 @@ def power_mont(a, b, n):
     return ret
 
 if __name__ == '__main__':
-    val_n = 0xCA3586E7EA485F3B0A222A4C79F7DD12E85388ECCDEE4035940D774C029CF831
-    val_e = 0x0000000000000000000000000000000000000000000000000000000000010001
-    val_d = 0xB6ACE0B14720169839B15FD13326CF1A1829BEAFC37BB937BEC8802FBCF46BD9
+    #val_n = 0xCA3586E7EA485F3B0A222A4C79F7DD12E85388ECCDEE4035940D774C029CF831
+    #val_e = 0x0000000000000000000000000000000000000000000000000000000000010001
+    #val_d = 0xB6ACE0B14720169839B15FD13326CF1A1829BEAFC37BB937BEC8802FBCF46BD9
+    val_n = 0x8182838485868788898a8b8c8d8e8f909192939495969798999a9b9c9d9e9fa0
+    val_e = 0xa1a2a3a4a5a6a7a8a9aaabacadaeafb0b1b2b3b4b5b6b7b8b9babbbcbdbebfc0
     assert len(argv) == 2, "Usage: {} e|d".format(argv[0])
     if argv[1] == 'e':
         exponentiation = val_e
@@ -83,5 +85,6 @@ if __name__ == '__main__':
             # msg_new = power_naive(msg, exponentiation, val_n)
             msg_new = power_mont(msg, exponentiation, val_n)
             vals_new = map(lambda shamt: (msg_new>>shamt)&255, range((w_chunk_size-1)*8, -8, -8))
+            print(vals_new)
             vals_new = pack("{}B".format(w_chunk_size), *vals_new)
-            stdout.write(vals_new)
+            #stdout.write('%x'%vals_new)

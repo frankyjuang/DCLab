@@ -21,8 +21,11 @@ key = fp_key.read(64)
 enc = fp_enc.read()
 assert len(enc) % 32 == 0
 
+print(key)
+
 s.write(key)
 for i in range(0, len(enc), 32):
+    print(i)
     s.write(enc[i:i+32])
     dec = s.read(31)
     fp_dec.write(dec)

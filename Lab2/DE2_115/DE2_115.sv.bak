@@ -135,25 +135,7 @@ module DE2_115(
 	output [16:0] HSMC_TX_D_P,
 	inout [6:0] EX_IO
 );
-/*
-assign HEX0 = '1;
-assign HEX1 = '1;
-assign HEX2 = '1;
-assign HEX3 = '1;
-assign HEX4 = '1;
-assign HEX5 = '1;
-assign HEX6 = '1;
-assign HEX7 = '1;
-*/
 	unsaved my_qsys(
-		.hex0(HEX0),
-		.hex1(HEX1),
-		.hex2(HEX2),
-		.hex3(HEX3),
-		.hex4(HEX4),
-		.hex5(HEX5),
-		.hex6(HEX6),
-		.hex7(HEX7),
 		.clk_clk(CLOCK_50),
 		.reset_reset_n(KEY[0]),
 		.uart_0_external_connection_rxd(UART_RXD),
