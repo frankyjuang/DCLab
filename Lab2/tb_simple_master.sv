@@ -44,7 +44,8 @@ module tb;
 
 	integer nread, nwrite, counter, delay;
 	assign avm_waitrequest = (avm_read||avm_write) && (counter!=delay);
-	assign avm_readdata = (avm_read && (counter==delay))? '1: 'x;
+	//assign avm_readdata = (avm_read && (counter==delay))? '1: 'x;
+	assign avm_readdata = (avm_read && (counter==delay))? nread: 'x;
 
 	task ResetCountdown;
 	begin

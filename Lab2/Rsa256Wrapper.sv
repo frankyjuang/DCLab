@@ -86,6 +86,14 @@ module Rsa256Wrapper(
 	endtask
 
 	always_comb begin
+        hex0_w = hex0_r;
+        hex1_w = hex1_r;
+        hex2_w = hex2_r;
+        hex3_w = hex3_r;
+        hex4_w = hex4_r;
+        hex5_w = hex5_r;
+        hex6_w = hex6_r;
+        hex7_w = hex7_r;
 			n_w = n_r;
 			e_w = e_r;
 			enc_w = enc_r;
@@ -101,15 +109,7 @@ module Rsa256Wrapper(
         case (state_r)
             S_GET_KEY:          begin
                                     // hex1 = 7'b1111110;
-									hex0_w = 7'b1111111;
-								   hex1_w = 7'b1111111;
-									hex2_w = 7'b1111111;
-									hex3_w = 7'b1111111;
-									hex4_w = 7'b1111111;
-									hex5_w = 7'b1111111;
-									hex6_w = 7'b1111111;
-									hex7_w = 7'b1111111;
-                                    if (waiting_r == WAITING_READ && avm_waitrequest == 1'b0) begin
+								    if (waiting_r == WAITING_READ && avm_waitrequest == 1'b0) begin
                                         if (avm_readdata[RX_OK_BIT] == 1'b1) begin
                                             state_w = S_GET_DATA;
                                             bytes_counter_w = 0;
@@ -126,22 +126,36 @@ module Rsa256Wrapper(
             S_GET_DATA:         begin
                                     if (avm_waitrequest == 1'b0) begin
                                         //$display("readdata: %d", avm_readdata[7:0]);
-                                        if (bytes_counter_r < 32) begin
+
+                                    if (bytes_counter_r < 32) begin
+                                            $display("readdata: %b", avm_readdata);
                                             n_w[7:0] = avm_readdata[7:0];
 											if (bytes_counter_r == 0) begin
+                                                $display("hex0 + hex1");
+                                                $display("n: %b", n_w);
                                                 hex0_w = n_w[6:0];
 											    hex1_w[0] = n_w[7];
                                             end else if (bytes_counter_r == 1) begin
+                                                $display("hex2 + hex3");
                                                 hex2_w = n_w[6:0];
 												hex3_w[0] = n_w[7];
                                             end else if (bytes_counter_r == 2) begin
+                                                $display("hex4 + hex5");
                                                 hex4_w = n_w[6:0];
 												hex5_w[0] = n_w[7];
                                             end else if (bytes_counter_r == 3) begin
+                                                $display("hex6 + hex7");
                                                 hex6_w = n_w[6:0];
 												hex7_w[0] = n_w[7];
                                             end
-														  
+                                            $display("hex0: %b", hex0);
+                                            $display("hex1: %b", hex1);
+                                            $display("hex2: %b", hex2);
+                                            $display("hex3: %b", hex3);
+                                            $display("hex4: %b", hex4);
+                                            $display("hex5: %b", hex5);
+                                            $display("hex6: %b", hex6);
+                                            $display("hex7: %b", hex7);
                                             if (bytes_counter_r < 31) begin
                                                 n_w = n_w << 8;
                                             end
@@ -195,14 +209,14 @@ module Rsa256Wrapper(
 
 	always_ff @(posedge avm_clk or posedge avm_rst) begin
 		if (avm_rst) begin
-            hex0_r <= '1;
-            hex1_r <= '1;
-            hex2_r <= '1;
-            hex3_r <= '1;
-            hex4_r <= '1;
-            hex5_r <= '1;
-            hex6_r <= '1;
-            hex7_r <= '1;
+            hex0_r <= '0;
+            hex1_r <= '0;
+            hex2_r <= '0;
+            hex3_r <= '0;
+            hex4_r <= '0;
+            hex5_r <= '0;
+            hex6_r <= '0;
+            hex7_r <= '0;
 			n_r <= 0;
 			e_r <= 0;
 			enc_r <= 0;
