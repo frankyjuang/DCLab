@@ -21,8 +21,17 @@ module tb;
 	logic avm_write;
 	logic [31:0] avm_writedata;
 	logic avm_waitrequest;
+    logic [6:0] hex0, hex1, hex2, hex3, hex4, hex5, hex6, hex7;
 
 	Rsa256Wrapper m1(
+        .hex0(hex0),
+        .hex1(hex1),
+        .hex2(hex2),
+        .hex3(hex3),
+        .hex4(hex4),
+        .hex5(hex5),
+        .hex6(hex6),
+        .hex7(hex7),
 		.avm_rst(avm_rst),
 		.avm_clk(avm_clk),
 		.avm_address(avm_address),
