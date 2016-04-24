@@ -26,6 +26,7 @@ module Rsa256Wrapper(
 	localparam S_GET_DATA 		 = 1;
 	localparam S_WAIT_CALCULATE = 2;
 	localparam S_SEND_DATA 		 = 3;
+    localparam S_WAIT            = 4;
 
 	localparam WAITING_READ 	 = 0;
 	localparam WAITING_WRITE 	 = 1;
@@ -34,7 +35,7 @@ module Rsa256Wrapper(
    logic [6:0] hex0_r, hex0_w, hex1_r, hex1_w, hex2_r, hex2_w, hex3_r, hex3_w, hex4_r, hex4_w;
    logic [6:0] hex5_r, hex5_w, hex6_r, hex6_w, hex7_r, hex7_w;
 	logic [255:0] n_r, n_w, e_r, e_w, enc_r, enc_w, dec_r, dec_w;
-	logic [1:0] state_r, state_w;
+	logic [2:0] state_r, state_w;
 	logic [6:0] bytes_counter_r, bytes_counter_w;
 	logic [4:0] avm_address_r, avm_address_w;
 	logic avm_read_r, avm_read_w, avm_write_r, avm_write_w;
@@ -113,70 +114,69 @@ module Rsa256Wrapper(
 												if (waiting_r == WAITING_READ && avm_waitrequest == 1'b0) begin
                                         if (avm_readdata[RX_OK_BIT] == 1'b1) begin
                                             state_w = S_GET_DATA;
-                                            bytes_counter_w = 0;
                                             StartRead(RX_BASE);
                                         end
                                     end else if (waiting_r == WAITING_WRITE && avm_waitrequest == 1'b0) begin
                                         if (avm_readdata[TX_OK_BIT] == 1'b1) begin
                                             state_w = S_SEND_DATA;
-                                            bytes_counter_w = 0;
                                             StartWrite(TX_BASE);
                                         end
                                     end
                                 end
+                S_WAIT:             begin
+                                        StartRead(STATUS_BASE);
+                                        state_w = S_GET_KEY;
+                                    end
             S_GET_DATA:         begin
 												if (avm_waitrequest == 1'b0) begin
                                         //$display("readdata: %d", avm_readdata[7:0]);
-													if (read_ne_r == 1) begin													
+                                                    state_w = S_WAIT;
+                                                    avm_read_w = 0;
+													bytes_counter_w = bytes_counter_r + 1;
+													if (read_ne_r == 1) begin
 														if (bytes_counter_r < 32) begin
-															$display("readdata: %b", avm_readdata);
-															n_w[7:0] = avm_readdata[7:0];															
-															
-															if (bytes_counter_r == 0) begin
-																$display("hex0 + hex1");
-																$display("n: %b", n_w);
-																hex0_w = n_w[6:0];
-																hex1_w[0] = n_w[7];
-															end else if (bytes_counter_r == 1) begin
-																$display("hex2 + hex3");
-																hex2_w = n_w[6:0];
-																hex3_w[0] = n_w[7];
-															end else if (bytes_counter_r == 2) begin
-																$display("hex4 + hex5");
-																hex4_w = n_w[6:0];
-																hex5_w[0] = n_w[7];
-															end else if (bytes_counter_r == 3) begin
-																$display("hex6 + hex7");
-																hex6_w = n_w[6:0];
-																hex7_w[0] = n_w[7];
-															end
-															$display("hex0: %b", hex0);
-															$display("hex1: %b", hex1);
-															$display("hex2: %b", hex2);
-															$display("hex3: %b", hex3);
-															$display("hex4: %b", hex4);
-															$display("hex5: %b", hex5);
-															$display("hex6: %b", hex6);
-															$display("hex7: %b", hex7);
-															
-															if (bytes_counter_r < 31) begin
-																n_w = n_w << 8;
-															end
+                                                            $display("counter: %d", bytes_counter_r);
+															$display("readdata: %x", avm_readdata);
+                                                            if (bytes_counter_r != 0) begin
+                                                                n_w = n_r << 8;
+                                                            end
+															n_w[7:0] = avm_readdata[7:0];
+                                                    
+                                                            /*
+															$display("hex0: %b", hex0_w);
+															$display("hex1: %b", hex1_w);
+															$display("hex2: %b", hex2_w);
+															$display("hex3: %b", hex3_w);
+															$display("hex4: %b", hex4_w);
+															$display("hex5: %b", hex5_w);
+															$display("hex6: %b", hex6_w);
+															$display("hex7: %b", hex7_w);
+                                                            */
+															$display("n_w: %x", n_w);
+															$display("n_r: %x", n_r);
 														end else if (bytes_counter_r < 64) begin
+															if (bytes_counter_r != 32) begin
+																e_w = e_r << 8;
+															end
 															e_w[7:0] = avm_readdata[7:0];
-															if (bytes_counter_r < 63) begin
-																e_w = e_w << 8;
-															end
+															$display("e_w: %x", e_w);
+															$display("e_r: %x", e_r);
 														end else if (bytes_counter_r < 96) begin
-															enc_w[7:0] = avm_readdata[7:0];
-															if (bytes_counter_r < 95) begin
-																enc_w = enc_w << 8;
+															if (bytes_counter_r != 64) begin
+																enc_w = enc_r << 8;
 															end
+															enc_w[7:0] = avm_readdata[7:0];
+															$display("enc_w: %x", enc_w);
+															$display("enc_r: %x", enc_r);
 														end else if (bytes_counter_r >= 96) begin
 															state_w = S_WAIT_CALCULATE;
+                                                            bytes_counter_w = 0;
 															avm_read_w = 1'b0;
 															rsa_start_w = 1'b1;
 															read_ne_w = 1'b0;
+															$display("n_r: %x", n_r);
+															$display("e_r: %x", e_r);
+															$display("enc_r: %x", enc_r);
 														end
 														/*
 														$display("n: %d", n_w);
@@ -184,19 +184,19 @@ module Rsa256Wrapper(
 														$display("enc: %d", enc_w);
 														$display("counter: %d", bytes_counter_r);
 														*/
-														bytes_counter_w += 1;														
-													end else begin																												
+													end else begin
+														bytes_counter_w = bytes_counter_r + 1;
 														if (bytes_counter_r < 32) begin
-															enc_w[7:0] = avm_readdata[7:0];															
-															if (bytes_counter_r < 31) begin
-																enc_w = enc_w << 8;
+															if (bytes_counter_r != 0) begin
+																enc_w = enc_r << 8;
 															end
+															enc_w[7:0] = avm_readdata[7:0];
 														end else if (bytes_counter_r >= 32) begin
+                                                            bytes_counter_w = 0;
 															state_w = S_WAIT_CALCULATE;
 															avm_read_w = 1'b0;
 															rsa_start_w = 1'b1;
 														end
-														bytes_counter_w += 1;
 													end
 												end
 											end
@@ -221,13 +221,16 @@ module Rsa256Wrapper(
                                 end
             S_SEND_DATA:        begin
                                     if (avm_waitrequest == 1'b0) begin
+                                        $display("dec: %x", dec_r);
+                                        bytes_counter_w = bytes_counter_r + 1;
+                                        avm_write_w = 0;
+                                        state_w = S_WAIT;
                                         if (bytes_counter_r < 31) begin
                                             dec_w = dec_r << 8;
                                         end else if (bytes_counter_r >= 32) begin
-                                            state_w = S_GET_KEY;
-                                            waiting_w = WAITING_NOTHING;
+                                            //state_w = S_GET_KEY;
+                                            waiting_w = WAITING_READ;
                                         end
-                                        bytes_counter_w += 1;
                                     end
                                 end
         endcase
