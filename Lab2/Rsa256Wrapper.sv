@@ -27,6 +27,7 @@ module Rsa256Wrapper(
 	localparam S_WAIT_CALCULATE = 2;
 	localparam S_SEND_DATA 		 = 3;
     localparam S_WAIT            = 4;
+    localparam S_AFTER_GET_STATUS    = 5;
 
 	localparam WAITING_READ 	 = 0;
 	localparam WAITING_WRITE 	 = 1;
@@ -111,15 +112,15 @@ module Rsa256Wrapper(
 			case (state_r)
 				S_GET_KEY:          begin
                                     // hex1 = 7'b1111110;
-												if (waiting_r == WAITING_READ && avm_waitrequest == 1'b0) begin
+												if (waiting_r == WAITING_READ && avm_waitrequest == 1'b0 && avm_read_r == 1'b1) begin
                                         if (avm_readdata[RX_OK_BIT] == 1'b1) begin
-                                            state_w = S_GET_DATA;
-                                            StartRead(RX_BASE);
+                                            avm_read_w = 0
+                                            state_w = S_AFTER_GET_STATUS;
                                         end
-                                    end else if (waiting_r == WAITING_WRITE && avm_waitrequest == 1'b0) begin
+                                    end else if (waiting_r == WAITING_WRITE && avm_waitrequest == 1'b0 && avm_read_r == 1'b1) begin
                                         if (avm_readdata[TX_OK_BIT] == 1'b1) begin
-                                            state_w = S_SEND_DATA;
-                                            StartWrite(TX_BASE);
+                                            avm_read_w = 0;
+                                            state_w = S_AFTER_GET_STATUS;
                                         end
                                     end
                                 end
@@ -127,8 +128,17 @@ module Rsa256Wrapper(
                                         StartRead(STATUS_BASE);
                                         state_w = S_GET_KEY;
                                     end
+                S_AFTER_GET_STATUS: begin
+                                        if (waiting_r == WAITING_READ) begin
+                                            StartRead(RX_BASE);
+                                            state_w = S_GET_DATA;
+                                        end else if (waiting_r == WAITING_WRITE) begin
+                                            StartWrite(TX_BASE);
+                                            state_w = S_SEND_DATA;
+                                        end
+                                    end
             S_GET_DATA:         begin
-												if (avm_waitrequest == 1'b0) begin
+												if (avm_waitrequest == 1'b0 && avm_read_r == 1) begin
                                         //$display("readdata: %d", avm_readdata[7:0]);
                                                     state_w = S_WAIT;
                                                     avm_read_w = 0;
@@ -141,7 +151,23 @@ module Rsa256Wrapper(
                                                                 n_w = n_r << 8;
                                                             end
 															n_w[7:0] = avm_readdata[7:0];
-                                                    
+                                                    if (bytes_counter_r == 0) begin
+																//$display("hex0 + hex1");
+																hex0_w = n_w[6:0];
+																hex1_w[0] = n_w[7];
+															end else if (bytes_counter_r == 1) begin
+																//$display("hex2 + hex3");
+																hex2_w = n_w[6:0];
+																hex3_w[0] = n_w[7];
+															end else if (bytes_counter_r == 2) begin
+																//$display("hex4 + hex5");
+																hex4_w = n_w[6:0];
+																hex5_w[0] = n_w[7];
+															end else if (bytes_counter_r == 3) begin
+																//$display("hex6 + hex7");
+																hex6_w = n_w[6:0];
+																hex7_w[0] = n_w[7];
+															end
                                                             /*
 															$display("hex0: %b", hex0_w);
 															$display("hex1: %b", hex1_w);
@@ -220,7 +246,7 @@ module Rsa256Wrapper(
                                     end
                                 end
             S_SEND_DATA:        begin
-                                    if (avm_waitrequest == 1'b0) begin
+                                    if (avm_waitrequest == 1'b0 && avm_write_r == 1) begin
                                         $display("dec: %x", dec_r);
                                         bytes_counter_w = bytes_counter_r + 1;
                                         avm_write_w = 0;
@@ -230,6 +256,7 @@ module Rsa256Wrapper(
                                         end else if (bytes_counter_r >= 32) begin
                                             //state_w = S_GET_KEY;
                                             waiting_w = WAITING_READ;
+                                            bytes_counter_w = 0;
                                         end
                                     end
                                 end
