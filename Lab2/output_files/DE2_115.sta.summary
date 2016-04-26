@@ -3,19 +3,19 @@ TimeQuest Timing Analyzer Summary
 ------------------------------------------------------------
 
 Type  : Slow 1200mV 85C Model Setup 'my_qsys|altpll_0|sd1|pll7|clk[0]'
-Slack : 20.240
-TNS   : 0.000
+Slack : -2.543
+TNS   : -111.907
 
 Type  : Slow 1200mV 85C Model Hold 'my_qsys|altpll_0|sd1|pll7|clk[0]'
 Slack : 0.402
 TNS   : 0.000
 
 Type  : Slow 1200mV 85C Model Recovery 'my_qsys|altpll_0|sd1|pll7|clk[0]'
-Slack : 22.635
+Slack : 18.700
 TNS   : 0.000
 
 Type  : Slow 1200mV 85C Model Removal 'my_qsys|altpll_0|sd1|pll7|clk[0]'
-Slack : 1.014
+Slack : 5.165
 TNS   : 0.000
 
 Type  : Slow 1200mV 85C Model Minimum Pulse Width 'CLOCK_50'
@@ -23,7 +23,7 @@ Slack : 9.891
 TNS   : 0.000
 
 Type  : Slow 1200mV 85C Model Minimum Pulse Width 'my_qsys|altpll_0|sd1|pll7|clk[0]'
-Slack : 12.207
+Slack : 12.195
 TNS   : 0.000
 
 Type  : Slow 1200mV 85C Model Minimum Pulse Width 'CLOCK2_50'
@@ -35,19 +35,19 @@ Slack : 16.000
 TNS   : 0.000
 
 Type  : Slow 1200mV 0C Model Setup 'my_qsys|altpll_0|sd1|pll7|clk[0]'
-Slack : 20.652
+Slack : 0.185
 TNS   : 0.000
 
 Type  : Slow 1200mV 0C Model Hold 'my_qsys|altpll_0|sd1|pll7|clk[0]'
-Slack : 0.354
+Slack : 0.353
 TNS   : 0.000
 
 Type  : Slow 1200mV 0C Model Recovery 'my_qsys|altpll_0|sd1|pll7|clk[0]'
-Slack : 22.852
+Slack : 19.253
 TNS   : 0.000
 
 Type  : Slow 1200mV 0C Model Removal 'my_qsys|altpll_0|sd1|pll7|clk[0]'
-Slack : 0.921
+Slack : 4.603
 TNS   : 0.000
 
 Type  : Slow 1200mV 0C Model Minimum Pulse Width 'CLOCK_50'
@@ -55,7 +55,7 @@ Slack : 9.887
 TNS   : 0.000
 
 Type  : Slow 1200mV 0C Model Minimum Pulse Width 'my_qsys|altpll_0|sd1|pll7|clk[0]'
-Slack : 12.209
+Slack : 12.184
 TNS   : 0.000
 
 Type  : Slow 1200mV 0C Model Minimum Pulse Width 'CLOCK2_50'
@@ -67,19 +67,19 @@ Slack : 16.000
 TNS   : 0.000
 
 Type  : Fast 1200mV 0C Model Setup 'my_qsys|altpll_0|sd1|pll7|clk[0]'
-Slack : 22.741
+Slack : 10.880
 TNS   : 0.000
 
 Type  : Fast 1200mV 0C Model Hold 'my_qsys|altpll_0|sd1|pll7|clk[0]'
-Slack : 0.182
+Slack : 0.181
 TNS   : 0.000
 
 Type  : Fast 1200mV 0C Model Recovery 'my_qsys|altpll_0|sd1|pll7|clk[0]'
-Slack : 23.781
+Slack : 21.546
 TNS   : 0.000
 
 Type  : Fast 1200mV 0C Model Removal 'my_qsys|altpll_0|sd1|pll7|clk[0]'
-Slack : 0.482
+Slack : 2.649
 TNS   : 0.000
 
 Type  : Fast 1200mV 0C Model Minimum Pulse Width 'CLOCK_50'

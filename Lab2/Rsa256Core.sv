@@ -49,16 +49,16 @@ module Rsa256Core(
 		finished_w = finished_r;
 		case (state_r)
 			RESET:	begin
+						finished_w = 1'b0;
 						if (i_start == 1'b1) begin
 							a_w = i_a;
 							e_w = i_e;
 							n_w = i_n;
 							MA_counter_w = 0;
 							ME_counter_w = 0;
-							finished_w = 1'b0;
 							S_w = 1;
 							preprop_S_w = 0;
-							preprop_T_w = (1 << 256);
+							preprop_T_w = i_a;
 							state_w = PREPROP;
 						end
 					end
@@ -66,15 +66,15 @@ module Rsa256Core(
 			PREPROP:begin
 						// perform T <- a * 2^256 mod n
 						if (MA_counter_r <= 255) begin
-							if (a_r[MA_counter_r] == 1) begin
-								// perform s <- (s + t) mod n
-								preprop_S_w = (preprop_S_r + preprop_T_r) % n_r;
-							end
 							// perform t <- (t + t) mod n
-							preprop_T_w = (2 * preprop_T_r) % n_r;
+                     if (2 * preprop_T_r >= n_r) begin
+								 preprop_T_w = 2 * preprop_T_r - n_r;
+                     end else begin
+                         preprop_T_w = 2 * preprop_T_r;
+                     end
 							MA_counter_w = MA_counter_r + 1;
 						end else begin
-							T_w = preprop_S_r;
+							T_w = preprop_T_r;
 							MA_counter_w = 0;
 							state_w = MA;
 							V_i_w = 0;
@@ -123,26 +123,13 @@ module Rsa256Core(
 						end
 					end
 		endcase
+		if (i_rst == 1'b1) begin
+			state_w = RESET;
+        end
 	end
 
-	always_ff @(posedge i_clk or posedge i_rst) begin
-		if (i_rst == 1'b1) begin
-			state_r <= RESET;
-		end else begin
-			state_r <= state_w;
-		end
-		/*
-        $display("finished: %d", finished_r);
-		$display("state: %d", state_w);
-		$display("MA: %d", MA_counter_w);
-		$display("ME: %d", ME_counter_w);
-		$display("a: %b", a_r);
-		$display("S: %d", S_w);
-		$display("V: %d",V_i_w);
-		$display("T: %d",T_w);
-		$display("prep_S: %d", preprop_S_w);
-		$display("prep_T: %d", preprop_T_w);
-		*/
+	always_ff @(posedge i_clk) begin
+		state_r <= state_w;
 		a_r <= a_w;
 		e_r <= e_w;
 		n_r <= n_w;

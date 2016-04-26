@@ -49,16 +49,16 @@ module Rsa256Core(
 		finished_w = finished_r;
 		case (state_r)
 			RESET:	begin
+						finished_w = 1'b0;
 						if (i_start == 1'b1) begin
 							a_w = i_a;
 							e_w = i_e;
 							n_w = i_n;
 							MA_counter_w = 0;
 							ME_counter_w = 0;
-							finished_w = 1'b0;
 							S_w = 1;
 							preprop_S_w = 0;
-							preprop_T_w = (1 << 256);
+							preprop_T_w = i_a;
 							state_w = PREPROP;
 						end
 					end

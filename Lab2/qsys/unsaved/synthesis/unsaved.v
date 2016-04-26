@@ -4,6 +4,7 @@
 
 `timescale 1 ps / 1 ps
 module unsaved (
+    /*
 		output wire  hex0,  // debug
 		output wire  hex1,  // debug
 		output wire  hex2,  // debug
@@ -12,6 +13,7 @@ module unsaved (
 		output wire  hex5,  // debug
 		output wire  hex6,  // debug
 		output wire  hex7,  // debug
+        */
 		input  wire  clk_clk,                        //                        clk.clk
 		input  wire  reset_reset_n,                  //                      reset.reset_n
 		input  wire  uart_0_external_connection_rxd, // uart_0_external_connection.rxd
@@ -50,6 +52,7 @@ module unsaved (
 	);
 
 	Rsa256Wrapper new_component_0 (
+        /*
       .hex0            (hex0),    // debug
 		.hex1            (hex1),    // debug
 		.hex2            (hex2),    // debug
@@ -58,6 +61,7 @@ module unsaved (
 		.hex5            (hex5),    // debug
 		.hex6            (hex6),    // debug
 		.hex7            (hex7),    // debug
+        */
 		.avm_rst         (rst_controller_001_reset_out_reset),        //    reset_sink.reset
 		.avm_clk         (altpll_0_c0_clk),                           //    clock_sink.clk
 		.avm_address     (new_component_0_avalon_master_address),     // avalon_master.address

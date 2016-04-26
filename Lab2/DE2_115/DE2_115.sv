@@ -146,6 +146,7 @@ assign HEX6 = '1;
 assign HEX7 = '1;
 */
 	unsaved my_qsys(
+    /*
 		.hex0(HEX0),
 		.hex1(HEX1),
 		.hex2(HEX2),
@@ -154,6 +155,7 @@ assign HEX7 = '1;
 		.hex5(HEX5),
 		.hex6(HEX6),
 		.hex7(HEX7),
+        */
 		.clk_clk(CLOCK_50),
 		.reset_reset_n(KEY[0]),
 		.uart_0_external_connection_rxd(UART_RXD),

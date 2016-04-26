@@ -4,38 +4,6 @@
 			"name" : "Top",
 			"pins" : [
 				{
-					"name" : "HEX0[0]",
-					"strict" : false
-				},
-				{
-					"name" : "HEX1[0]",
-					"strict" : false
-				},
-				{
-					"name" : "HEX2[0]",
-					"strict" : false
-				},
-				{
-					"name" : "HEX3[0]",
-					"strict" : false
-				},
-				{
-					"name" : "HEX4[0]",
-					"strict" : false
-				},
-				{
-					"name" : "HEX5[0]",
-					"strict" : false
-				},
-				{
-					"name" : "HEX6[0]",
-					"strict" : false
-				},
-				{
-					"name" : "HEX7[0]",
-					"strict" : false
-				},
-				{
 					"name" : "UART_TXD",
 					"strict" : false
 				},

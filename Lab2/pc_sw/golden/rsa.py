@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
 from sys import argv, stdin, stdout
 from struct import unpack, pack
 
