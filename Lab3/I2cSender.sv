@@ -27,7 +27,7 @@ module I2cSender #(parameter BYTE=1) (
     assign o_sclk       = sclk_r;
     assign o_sdat       = oe_r ? o_bit_r : 1'bz;
     
-    alway_comb begin
+    always_comb begin
         state_w         = state_r;
         clk_cnt_w       = clk_cnt_r;
         bit_cnt_w       = bit_cnt_r;
