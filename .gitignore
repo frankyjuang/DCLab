@@ -1,2 +1,6 @@
 *.zip
 Past\ Reports
+*.log
+*/nWaveLog
+novas.*
+*.fsdb

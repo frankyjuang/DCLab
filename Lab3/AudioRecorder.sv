@@ -1,5 +1,8 @@
 module AudioRecorder (
     input           start,
+    input           end,
+    input           rst,
+    input           pause,
     output  [19:0]  sram_addr,
     inout   [15:0]  sram_dq,
     output          sram_ce_n,
@@ -7,25 +10,25 @@ module AudioRecorder (
     output          sram_we_n,
     output          sram_ub_n,
     output          sram_lb_n,
-    output          aud_xck,
     inout           aud_bclk,
-    output          aud_dacdat,
-    inout           aud_daclrck,
     input           aud_adcdat,
     inout           aud_adclrck
 );
 
-parameter IDLE          = 2'b00;
-parameter GET_DATA      = 2'b01;
-parameter SEND_DATA     = 2'b10;
-parameter CON           = 2'b11;
+parameter IDLE          = 3'b000;
+parameter GET_DATA      = 3'b001;
+parameter SEND_DATA     = 3'b010;
+parameter CON           = 3'b011;
+parameter PAUSE         = 3'b100;
 
-logic [1:0] state_r, state_w;
+logic [2:0] state_r, state_w;
 logic [15:0] data_r, data_w;
 logic [4:0] data_counter_r, data_counter_w;
 logic sent_r, sent_w;
 logic ce_r, ce_w, oe_r, oe_w, we_r, we_w, ub_r, ub_w, lb_r, lb_w;
 logic [19:0] addr_r, addr_w;
+logic got_end_sig_r, got_end_sig_w;
+logic got_pause_sig_r, got_pause_sig_w;
 
 assign sram_dq = data_r;
 assign sram_addr = addr_r;
@@ -41,25 +44,23 @@ always_comb begin
     ub_w = ub_r;
     lb_w = lb_r;
     addr_w = addr_r;
+    got_end_sig_w = got_end_sig_r;
+    got_pause_sig_w = got_pause_sig_r;
+
     case(state_r)
         IDLE:
             begin
-                we_w = 1'bx;
-                ce_w = 1'b1;
-                oe_w = 1'bx;
-                lb_w = 1'bx;
-                ub_w = 1'bx;
                 if (start == 1'b1) begin
                     state_w = CON;
-                    data_counter_w = 0;
-                    data_w = 0;
-                    sent_w = 1;
-                    addr_w = 0;
                 end
             end
         CON:
             begin
-                if (sent_r == 1'b1 && aud_adclrck == 1'b1) begin
+                if (end == 1'b1) begin
+                    state_w = IDLE;
+                end else if (pause == 1'b1) begin
+                    state_w = PAUSE;
+                end else if (sent_r == 1'b1 && aud_adclrck == 1'b1) begin
                     sent_w = 0;
                 end else if (sent_r == 1'b0 && aud_adclrck == 1'b0) begin
                     state_w = GET_DATA;
@@ -81,25 +82,71 @@ always_comb begin
                     lb_w = 1'b0;
                     ub_w = 1'b0;
                 end
+                if (end == 1'b1) begin
+                    got_end_sig_w = 1'b1;
+                end else if (pause == 1'b1) begin
+                    got_pause_sig_w = 1'b1;
+                end
             end
         SEND_DATA:
             begin
-                if (addr_r == '1) begin
-                    addr_w = 0;
-                end else begin
-                    addr_w = addr_r + 1;
-                end
                 we_w = 1'bx;
                 ce_w = 1'b1;
                 oe_w = 1'bx;
                 lb_w = 1'bx;
                 ub_w = 1'bx;
-                state_w = CON;
                 sent_w = 1'b1;
+                if (end == 1'b1 || got_end_sig_r == 1'b1) begin
+                    state_w = IDLE;
+                end else if (pause == 1'b1 || got_pause_sig_r == 1'b1) begin
+                    state_w = PAUSE;
+                end else begin
+                    state_w = CON;
+                end
+                if (addr_r == '1) begin
+                    addr_w = 0;
+                    state_w = IDLE;
+                end else begin
+                    addr_w = addr_r + 1;
+                end
+            end
+        PAUSE:
+            begin
+                if (start == 1'b1) begin
+                    state_w = CON;
+                end else if (end == 1'b1) begin
+                    state_w = IDLE;
+                end
             end
     endcase
 end
 
 always_ff @(negedge aud_bclk) begin
-    state_r <= state_w;
+    if (rst) begin
+        state_r <= IDLE;
+        data_r <= 0;
+        data_counter_r <= 0;
+        sent_r <= 1;
+        we_r <= 1'bx;
+        ce_r <= 1'b1;
+        oe_r <= 1'bx;
+        lb_r <= 1'bx;
+        ub_r <= 1'bx;
+        addr_r <= 0;
+        got_end_sig_r <= 0;
+        got_pause_sig_r <= 0;
+    end else begin
+        state_r <= state_w;
+        data_r <= data_w;
+        data_counter_r <= data_counter_w;
+        sent_r <= sent_w;
+        we_r <= we_w;
+        ce_r <= ce_w;
+        oe_r <= oe_w;
+        lb_r <= lb_w;
+        ub_r <= ub_w;
+        addr_r <= addr_w;
+        got_end_sig_r <= got_end_sig_w;
+        got_pause_sig_r <= got_pause_sig_w;
+    end
 end

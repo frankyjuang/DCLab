@@ -17,6 +17,7 @@ module I2cSender #(parameter BYTE=1) (
     logic [1:0]         state_r, state_w;
     logic [1:0]         clk_cnt_r, clk_cnt_w;
     logic [2:0]         bit_cnt_r, bit_cnt_w;
+    logic [1:0]         byte_cnt_r, byte_cnt_w;
     logic               sclk_r, sclk_w;
     logic               oe_r, oe_w;
     logic               o_bit_r, o_bit_w;
@@ -32,16 +33,17 @@ module I2cSender #(parameter BYTE=1) (
         state_w         = state_r;
         clk_cnt_w       = clk_cnt_r;
         bit_cnt_w       = bit_cnt_r;
+        byte_cnt_w      = byte_cnt_r;
         sclk_w          = sclk_r;
         oe_w            = oe_r;
         o_bit_w         = o_bit_r;
         i_data_w        = i_data_r;
         o_finished_w    = o_finished_r;
-        $display("state: %d", state_w);
 
         case (state_r)
             START:
                 begin
+                    //$display("state START");
                     if (clk_cnt_r == 2'b10) begin
                         o_bit_w = 0;
                         clk_cnt_w = clk_cnt_r - 1;
@@ -51,6 +53,7 @@ module I2cSender #(parameter BYTE=1) (
                     end else begin
                         clk_cnt_w = 2'b10;
                         bit_cnt_w = 3'b111;
+                        byte_cnt_w = BYTE - 1;
                         o_bit_w = i_data_r[BYTE*8-1]; // MSB->LSB
                         i_data_w = i_data_r << 1;
                         state_w = TX;
@@ -59,10 +62,11 @@ module I2cSender #(parameter BYTE=1) (
 
             TX:
                 begin
+                    //$display("state TX");
                     if (clk_cnt_r == 2'b10) begin
                         clk_cnt_w = clk_cnt_r - 1;
                         sclk_w = 1;
-                    end if (clk_cnt_r == 2'b01) begin
+                    end else if (clk_cnt_r == 2'b01) begin
                         clk_cnt_w = clk_cnt_r - 1;
                         sclk_w = 0;
                     end else begin  // clk_cnt_r == 2'b00
@@ -79,35 +83,44 @@ module I2cSender #(parameter BYTE=1) (
                 end
             ACK:
                 begin
+                    //$display("state ACK");
                     if (clk_cnt_r == 2'b10) begin
                         clk_cnt_w = clk_cnt_r - 1;
                         sclk_w = 1;
-                    end if (clk_cnt_r == 2'b01) begin
+                    end else if (clk_cnt_r == 2'b01) begin
                         clk_cnt_w = clk_cnt_r - 1;
                         sclk_w = 0;
                     end else begin  // clk_cnt_r == 2'b00
                         clk_cnt_w = 2'b10;
                         oe_w = 1;
-                        o_bit_w = 0;
-                        state_w = FIN;
+                        if (byte_cnt_r == 2'b00) begin
+                            o_bit_w = 0;
+                            state_w = FIN;
+                        end else begin
+                            bit_cnt_w = 3'b111;
+                            byte_cnt_w = byte_cnt_r - 1;
+                            o_bit_w = i_data_r[BYTE*8-1]; // MSB->LSB
+                            i_data_w = i_data_r << 1;
+                            state_w = TX;
+                        end
                     end
                 end
 
             FIN:
                 begin
+                    //$display("state FIN");
                     if (clk_cnt_r == 2'b10) begin
                         clk_cnt_w = clk_cnt_r - 1;
                         sclk_w = 1;
-                    end if (clk_cnt_r == 2'b01) begin
+                    end else if (clk_cnt_r == 2'b01) begin
                         clk_cnt_w = clk_cnt_r - 1;
                         o_bit_w = 1;
                         o_finished_w = 1;
                     end else begin  // clk_cnt_r == 2'b00
                         o_finished_w = 1'b0;
                         if (i_start) begin
-                            $display("lalallallalallallalall");
+                            //$display("i_start triggered.");
                             state_w = START;
-                            $display("blah: %d", state_w);
                             clk_cnt_w = 2'b10;
                             i_data_w = i_dat;
                         end
@@ -118,24 +131,26 @@ module I2cSender #(parameter BYTE=1) (
 
     always_ff @(posedge i_clk or posedge i_rst) begin
         if (i_rst) begin
-            state_r <= FIN;
-            $display("ooooooo zhi");
-            clk_cnt_r <= 2'b00;
-            bit_cnt_r <= 3'b000;
-            sclk_r <= 1;
-            oe_r <= 1;
-            o_bit_r <= 1;
-            i_data_r <= 8'h00;
-            o_finished_r <= 0;
+            //$display("i_rst triggered.");
+            state_r         <= FIN;
+            clk_cnt_r       <= 2'b00;
+            bit_cnt_r       <= 3'b000;
+            byte_cnt_r      <= 2'b00;
+            sclk_r          <= 1;
+            oe_r            <= 1;
+            o_bit_r         <= 1;
+            i_data_r        <= 8'h00;
+            o_finished_r    <= 0;
         end else begin
-            state_r <= state_w;
-            clk_cnt_r <= clk_cnt_w;
-            bit_cnt_r <= bit_cnt_w;
-            sclk_r <= sclk_w;
-            oe_r <= oe_w;
-            o_bit_r <= o_bit_w;
-            i_data_r <= i_data_w;
-            o_finished_r <= o_finished_w;
+            state_r         <= state_w;
+            clk_cnt_r       <= clk_cnt_w;
+            bit_cnt_r       <= bit_cnt_w;
+            byte_cnt_r      <= byte_cnt_w;
+            sclk_r          <= sclk_w;
+            oe_r            <= oe_w;
+            o_bit_r         <= o_bit_w;
+            i_data_r        <= i_data_w;
+            o_finished_r    <= o_finished_w;
         end
     end
 
