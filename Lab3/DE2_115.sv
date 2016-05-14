@@ -138,9 +138,6 @@ module DE2_115(
 	logic key0, key1, key2, key3;
     logic [7:0] rec_state, rec_time, rec_speed;
 
-    I2cInitialize i2cinit(
-    );
-
 	Debounce deb0(
 		.i_in(KEY[0]),
 		.i_clk(CLOCK_50),
@@ -170,6 +167,7 @@ module DE2_115(
         .key3(key3),
         .sw0(SW[0]),
         .sw1(SW[1]),
+        .sw17(SW[17]),
 		.rec_state(rec_state),
 		.rec_time(rec_time),
 		.rec_speed(rec_speed),
@@ -186,7 +184,11 @@ module DE2_115(
         .aud_daclrck(AUD_DACLRCK),
         .aud_adcdat(AUD_ADCDAT),
         .aud_adclrck(AUD_ADCLRCK)
+        .i2c_sclk(I2C_SCLK),
+        .i2c_sdat(I2C_SDAT)
 	);
+	output I2C_SCLK,
+	inout I2C_SDAT,
 
     SevenHexAlphabet seven_alpha(
         .i_state(rec_state),
@@ -195,13 +197,13 @@ module DE2_115(
         .o_seven_2(HEX2),
         .o_seven_3(HEX3)
     );
-	SevenHexDecoder seven_dec_time(
-		.i_hex(rec_time),
+	SevenHexTime seven_dec_time(
+		.i_time(rec_time),
 		.o_seven_ten(HEX5),
 		.o_seven_one(HEX4)
 	);
-	SevenHexDecoder seven_dec_speed(
-		.i_hex(rec_speed),
+	SevenHexSpeed seven_dec_speed(
+		.i_speed(rec_speed),
 		.o_seven_ten(HEX7),
 		.o_seven_one(HEX6)
 	);
