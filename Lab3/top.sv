@@ -7,6 +7,7 @@ module top (
     input           key3,
     input           sw0,
     input           sw1,
+    input           sw17,
     output  [1:0]   rec_state,
     output  [7:0]   rec_time,
     output  [7:0]   rec_speed,
@@ -17,12 +18,13 @@ module top (
     output          sram_we_n,
     output          sram_ub_n,
     output          sram_lb_n,
-    output          aud_xck,
     inout           aud_bclk,
     output          aud_dacdat,
     inout           aud_daclrck,
     input           aud_adcdat,
-    inout           aud_adclrck
+    inout           aud_adclrck,
+    output          i2c_sclk,
+    inout           i2c_sdat
 );
 
     parameter IDLE      = 3'b000;
@@ -36,8 +38,10 @@ module top (
     parameter DISP_REC      = 2'b01;
     parameter DISP_PLAY     = 2'b10;
     parameter DISP_PAUSE    = 2'b11;
-    
+
     logic [2:0]     state_r, state_w;
+    logic           init_rst, init_start;
+    logic           inited_r, inited_w;
     logic [1:0]     rec_state_r, rec_state_w;
     logic [7:0]     rec_time_r, rec_time_w, rec_speed_r, rec_speed_w;
     logic [19:0]    sram_addr_r, sram_addr_w;
@@ -46,7 +50,9 @@ module top (
     logic           sram_ub_n_r, sram_ub_n_w, sram_lb_n_r, sram_lb_n_w;
     logic           aud_xck_r, aud_xck_w, aud_bclk_r, aud_bclk_w, aud_dacdat_r, aud_dacdat_w;
     logic           aud_daclrck_r, aud_daclrck_w, aud_adcdat_r, aud_adcdat_w, aud_adclrck_r, aud_adclrck_w;
-    logic           inited_r, inited_w;
+
+    logic           rec_start_r, rec_start_w, rec_end_r, rec_end_w, rec_rst_r, rec_rst_w, rec_pause_r, rec_pause_w;
+    logic           play_start_r, play_start_w, play_end_r, play_end_w, play_rst_r, play_rst_w, play_pause_r, play_pause_w;
 
     assign rec_state        = rec_state_r;
     assign rec_time         = rec_time_r;
@@ -58,18 +64,25 @@ module top (
     assign sram_we_n        = sram_we_n_r;
     assign sram_ub_n        = sram_ub_n_r;
     assign sram_lb_n        = sram_lb_n_r;
-    assign aud_xck          = aud_xck_r;
-    assign aud_bclk         = ? aud_bclk_r : 1'bz;
+    assign aud_bclk         = aud_bclk_r;
     assign aud_dacdat       = aud_dacdat_r;
-    assign aud_daclrck      = ? aud_daclrck_r : 1'bz;
-    assign aud_adclrck      = ? aud_adclrck_r : 1'bz;
+    assign aud_daclrck      = aud_daclrck_r; // no enable, use as output only
+    assign aud_adclrck      = aud_adclrck_r; // no enable, use as output only
 
     I2cInitialize i2cinit(
+        .i_clk(i_clk),
+        .i_start(init_start),
+        .i_rst(init_rst),
+        .o_sclk(i2c_sclk),
+        .o_finished(inited_w),
+        .io_sdat(i2c_sdat)
     );
 
     AudioRecorder audi_recorder(
-        .start(rec_start),
-        .rec_time(rec_time),
+        .start(rec_start_r),
+        .end(rec_end_r),
+        .rst(rec_rst_r),
+        .pause(rec_pause_r),
         .sram_addr(sram_addr),
         .sram_dq(sram_dq),
         .sram_ce_n(sram_ce_n),
@@ -77,19 +90,18 @@ module top (
         .sram_we_n(sram_we_n),
         .sram_ub_n(sram_ub_n),
         .sram_lb_n(sram_lb_n),
-        .aud_xck(aud_xck),
         .aud_bclk(aud_bclk),
-        .aud_dacdat(aud_dacdat),
-        .aud_daclrck(aud_daclrck),
         .aud_adcdat(aud_adcdat),
         .aud_adclrck(aud_adclrck)
     );
 
     AudioPlayer audi_player(
-        .i_clk(i_clk),
-        .i_rst(rec_rst),
-        .rec_time(rec_time),
-        .rec_speed(rec_speed),
+        .start(play_start_r),
+        .end(play_end_r),
+        .rst(play_rst_r),
+        .pause(play_pause_r),
+        .speed(rec_speed),
+        .interpol_mode(sw17),
         .sram_addr(sram_addr),
         .sram_dq(sram_dq),
         .sram_ce_n(sram_ce_n),
@@ -97,12 +109,9 @@ module top (
         .sram_we_n(sram_we_n),
         .sram_ub_n(sram_ub_n),
         .sram_lb_n(sram_lb_n),
-        .aud_xck(aud_xck),
         .aud_bclk(aud_bclk),
         .aud_dacdat(aud_dacdat),
         .aud_daclrck(aud_daclrck),
-        .aud_adcdat(aud_adcdat),
-        .aud_adclrck(aud_adclrck)
     );
 
 
@@ -124,9 +133,15 @@ module top (
         aud_daclrck_w   = aud_daclrck_r;
         aud_adcdat_w    = aud_adcdat_r;
         aud_adclrck_w   = aud_adclrck_r;
+        rec_start_w     = rec_start_r;
+        rec_end_w       = rec_end_r;
+        rec_rst_w       = rec_rst_r;
+        play_start_w    = play_start_r;
+        play_end_w      = play_end_r;
+        play_rst_w      = play_rst_r;
 
         case(state_r)
-            IDLE:   
+            IDLE:
                 begin
                     if (inited_r == 1'b0 && key0 == 1'b1) begin
                         state_w = INIT;
@@ -136,9 +151,10 @@ module top (
                         state_w = PLAY;
                     end
                 end
-            INIT:   
+            INIT:
                 begin
                     // I2cInitialize...
+                     
                 end
             REC:
                 begin
@@ -199,6 +215,14 @@ module top (
             aud_daclrck_r   <= 0; // dunno what this should be
             aud_adcdat_r    <= 0; // dunno what this should be
             aud_adclrck_r   <= 0; // dunno what this should be
+            rec_start_r     <= 0;
+            rec_end_r       <= 0;
+            rec_rst_r       <= 0;
+            rec_pause_r     <= 0;
+            play_start_r    <= 0;
+            play_end_r      <= 0;
+            play_rst_r      <= 0;
+            play_pause_r    <= 0;
 
         end else begin
             state_r         <= state_w;
@@ -218,6 +242,15 @@ module top (
             aud_daclrck_r   <= aud_daclrck_w;
             aud_adcdat_r    <= aud_adcdat_w;
             aud_adclrck_r   <= aud_adclrck_w;
+            rec_start_r     <= rec_start_w;
+            rec_end_r       <= rec_end_w;
+            rec_rst_r       <= rec_rst_w;
+            rec_pause_r     <= rec_pause_w;
+            play_start_r    <= play_start_w;
+            play_end_r      <= play_end_w;
+            play_rst_r      <= play_rst_w;
+            play_pause_r    <= play_pause_w;
         end
-
     end
+
+endmodule

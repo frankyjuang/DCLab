@@ -4,7 +4,9 @@ module tb;
 	localparam CLK = 10;
 	localparam HCLK = CLK/2;
 
-	logic clk, sta, fin, rst, sclk, sdat;
+	logic clk, sta, fin, rst, sclk;
+    wire sdat;
+    logic [1:0] state;
 	initial clk = 0;
 	always #HCLK clk = ~clk;
 
@@ -15,6 +17,7 @@ module tb;
 		.i_start(sta),
 		.o_finished(fin),
 		.o_sclk(sclk),
+        .o_state(state),
 		.o_sdat(sdat)
 	);
 
@@ -25,7 +28,7 @@ module tb;
 		#(2*CLK)
 		rst = 0;
 		#(2*CLK)
-		rst = 1;
+		//rst = 1;
 		for (int j = 0; j < 3; j++) begin
 			@(posedge clk);
 		end
