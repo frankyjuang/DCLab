@@ -55,5 +55,11 @@ set_global_assignment -name EDA_SIMULATION_TOOL "ModelSim-Altera (VHDL)"
 set_global_assignment -name EDA_OUTPUT_DATA_FORMAT VHDL -section_id eda_simulation
 set_global_assignment -name POWER_PRESET_COOLING_SOLUTION "23 MM HEAT SINK WITH 200 LFPM AIRFLOW"
 set_global_assignment -name POWER_BOARD_THERMAL_MODEL "NONE (CONSERVATIVE)"
+set_global_assignment -name SYSTEMVERILOG_FILE SevenHexSpeed.sv
+set_global_assignment -name SYSTEMVERILOG_FILE SevenHexAlphabet.sv
+set_global_assignment -name SYSTEMVERILOG_FILE AudioRecorder.sv
+set_global_assignment -name SYSTEMVERILOG_FILE AudioPlayer.sv
+set_global_assignment -name SYSTEMVERILOG_FILE top.sv
+set_global_assignment -name SYSTEMVERILOG_FILE SevenHexTime.sv
 set_global_assignment -name SYSTEMVERILOG_FILE I2cSender.sv
 set_global_assignment -name SYSTEMVERILOG_FILE I2cInitialize.sv

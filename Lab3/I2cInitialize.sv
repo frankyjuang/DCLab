@@ -35,7 +35,7 @@ module I2cInitialize (
 
     assign o_finished   = finished_r;
     assign o_sclk       = sclk;
-    assign io_sdat       = sdat;
+    assign io_sdat      = sdat;
     
     I2cSender #(.BYTE(3)) i2c_sender(
         .i_clk(i_clk),

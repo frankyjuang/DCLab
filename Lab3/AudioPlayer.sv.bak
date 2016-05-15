@@ -1,6 +1,6 @@
 module AudioPlayer (
     input           start,
-    input           stop,
+    input           end,
     input           rst,
     input           pause,
     input   [3:0]   speed,
@@ -97,7 +97,7 @@ always_comb begin
                     addr_w = addr_r + 1;
                 end
 
-                if (stop == 1'b1) begin
+                if (end == 1'b1) begin
                     state_w = IDLE;
                 end else if (pause == 1) begin
                     got_pause_sig_w = 1'b1;
@@ -116,7 +116,7 @@ always_comb begin
                     end
                 end
 
-                if (stop == 1'b1) begin
+                if (end == 1'b1) begin
                     state_w = IDLE;
                 end else if (pause == 1'b1) begin
                     got_pause_sig_w = 1'b1;
@@ -155,7 +155,7 @@ always_comb begin
                         data_counter_w = 0;
                         sent_w = 1;
                         if (slow_counter_r == scale - 1) begin
-                            if (stop == 1'b1 || got_end_sig_r == 1'b1) begin
+                            if (end == 1'b1 || got_end_sig_r == 1'b1) begin
                                 state_w = IDLE;
                             end else if (pause == 1'b1 || got_pause_sig_r == 1'b1) begin
                                 state_w = PAUSE;
@@ -175,7 +175,7 @@ always_comb begin
                     end
                 end
 
-                if (stop == 1'b1) begin
+                if (end == 1'b1) begin
                     got_end_sig_w = 1'b1;
                 end else if (pause == 1'b1) begin
                     got_pause_sig_w = 1'b1;
@@ -190,7 +190,7 @@ always_comb begin
                 if (data_counter_r == 15) begin
                     data_counter_w = 0;
                     sent_w = 1;
-                    if (stop == 1'b1 || got_end_sig_r == 1'b1) begin
+                    if (end == 1'b1 || got_end_sig_r == 1'b1) begin
                         state_w = IDLE;
                     end else if (pause == 1'b1 || got_pause_sig_r == 1'b1) begin
                         state_w = PAUSE;
@@ -205,7 +205,7 @@ always_comb begin
                     end
                 end
 
-                if (stop == 1'b1) begin
+                if (end == 1'b1) begin
                     got_end_sig_w = 1'b1;
                 end else if (pause == 1'b1) begin
                     got_pause_sig_w = 1'b1;
@@ -221,7 +221,7 @@ always_comb begin
                     ub_w = 1'b0;
                     state_w = GET_DATA;
                     cur_speed_w = speed;
-                end else if (stop == 1'b1) begin
+                end else if (end == 1'b1) begin
                     state_w = IDLE;
                 end
             end
