@@ -136,8 +136,17 @@ module DE2_115(
 	inout [6:0] EX_IO
 );
 	logic key0, key1, key2, key3;
-    logic [7:0] rec_state, rec_time, rec_speed;
-
+    logic [1:0] audi_state;
+    logic [7:0] audi_time, audi_speed;
+    logic clk_12M, clk_100k;
+    
+    jfjplayer player(
+		.altpll_0_c0_clk(clk_12M), // 12 MHz
+		.altpll_0_c1_clk(clk_100k), // 100 kHz
+		.clk_clk(CLOCK_50),
+		.reset_reset_n(KEY[0]) 
+	);
+    assign AUD_XCK = clk_12M;
 	Debounce deb0(
 		.i_in(KEY[0]),
 		.i_clk(CLOCK_50),
@@ -158,19 +167,23 @@ module DE2_115(
 		.i_clk(CLOCK_50),
 		.o_neg(key3)
 	);
-
+    
+    wire [8:0] led;
+    assign LEDG = led;
 	top top_module(
 		.i_clk(CLOCK_50),
+        .i_clk_100k(clk_100k),
         .key0(key0),
         .key1(key1),
         .key2(key2),
         .key3(key3),
         .sw0(SW[0]),
         .sw1(SW[1]),
+        .sw16(SW[16]),
         .sw17(SW[17]),
-		.rec_state(rec_state),
-		.rec_time(rec_time),
-		.rec_speed(rec_speed),
+		.audio_state(audi_state),
+		.audio_time(audi_time),
+		.audio_speed(audi_speed),
         .sram_addr(SRAM_ADDR),
         .sram_dq(SRAM_DQ),
         .sram_ce_n(SRAM_CE_N),
@@ -178,33 +191,32 @@ module DE2_115(
         .sram_we_n(SRAM_WE_N),
         .sram_ub_n(SRAM_UB_N),
         .sram_lb_n(SRAM_LB_N),
-        .aud_xck(AUD_XCK),
         .aud_bclk(AUD_BCLK),
         .aud_dacdat(AUD_DACDAT),
         .aud_daclrck(AUD_DACLRCK),
         .aud_adcdat(AUD_ADCDAT),
-        .aud_adclrck(AUD_ADCLRCK)
+        .aud_adclrck(AUD_ADCLRCK),
         .i2c_sclk(I2C_SCLK),
-        .i2c_sdat(I2C_SDAT)
+        .i2c_sdat(I2C_SDAT),
+        .LR(led)
 	);
-	output I2C_SCLK,
-	inout I2C_SDAT,
 
     SevenHexAlphabet seven_alpha(
-        .i_state(rec_state),
+        .i_state(audi_state),
         .o_seven_0(HEX0),
         .o_seven_1(HEX1),
         .o_seven_2(HEX2),
         .o_seven_3(HEX3)
     );
 	SevenHexTime seven_dec_time(
-		.i_time(rec_time),
+		.i_time(audi_time),
 		.o_seven_ten(HEX5),
 		.o_seven_one(HEX4)
 	);
 	SevenHexSpeed seven_dec_speed(
-		.i_speed(rec_speed),
+		.i_speed(audi_speed),
 		.o_seven_ten(HEX7),
 		.o_seven_one(HEX6)
 	);
+    
 endmodule

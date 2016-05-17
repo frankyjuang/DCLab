@@ -10,18 +10,28 @@ module I2cInitialize (
     parameter IDLE = 1'b0;
     parameter SEND = 1'b1;
 
-    // parameter [23:0] CONFIG_DATA [9:0] = {
-    parameter CONFIG_DATA [9:0] = {
-        24'b0011010_0_000_0000_0_1001_0111, //L_LINE_IN     
-        24'b0011010_0_000_0001_0_1001_0111, //R_LINE_IN     
-        24'b0011010_0_000_0010_0_0111_1001, //L_HEAD_OUT    
-        24'b0011010_0_000_0011_0_0111_1001, //R_HEAD_OUT    
-        24'b0011010_0_000_0100_0_0001_0101, //A_AUD_CONTROL 
-        24'b0011010_0_000_0101_0_0000_0000, //D_AUD_CONTROL 
-        24'b0011010_0_000_0110_0_0000_0000, //POWER_CONTROL 
-        24'b0011010_0_000_0111_0_0100_0010, //D_AUD_INTER   
-        24'b0011010_0_000_1000_0_0001_1001, //SAMPLE_CONTROL
-        24'b0011010_0_000_1001_0_0000_0001  //ACTIVE_CONTROL
+    //parameter CONFIG_DATA [9:0] = {
+    //L_LINE_IN     
+    //R_LINE_IN     
+    //L_HEAD_OUT    
+    //R_HEAD_OUT    
+    //A_AUD_CONTROL 
+    //D_AUD_CONTROL 
+    //POWER_CONTROL 
+    //D_AUD_INTER   
+    //SAMPLE_CONTROL
+    //ACTIVE_CONTROL
+    parameter bit [23:0] CONFIG_DATA [9:0] = '{
+        24'b0011010_0_000_0000_0_1001_0111, 
+        24'b0011010_0_000_0001_0_1001_0111, 
+        24'b0011010_0_000_0010_0_0111_1001, 
+        24'b0011010_0_000_0011_0_0111_1001, 
+        24'b0011010_0_000_0100_0_0001_0101, //orig: 0_0001_0101 
+        24'b0011010_0_000_0101_0_0000_0000, 
+        24'b0011010_0_000_0110_0_0000_0000, 
+        24'b0011010_0_000_0111_0_0100_0010, 
+        24'b0011010_0_000_1000_0_0001_1001, 
+        24'b0011010_0_000_1001_0_0000_0001  
     };
 
     logic           state_r, state_w;
@@ -48,11 +58,11 @@ module I2cInitialize (
     );
 
     always_comb begin
-        state_r             = state_w;
-        sender_start_r      = sender_start_w;
-        send_data_r         = send_data_w;
-        finished_r          = finished_w;
-        counter_r           = counter_w;
+        state_w             = state_r;
+        sender_start_w      = sender_start_r;
+        send_data_w         = send_data_r;
+        finished_w          = finished_r;
+        counter_w           = counter_r;
         
         case (state_r)
             IDLE:
@@ -97,3 +107,5 @@ module I2cInitialize (
             sender_start_r      <= sender_start_w;
         end
     end
+    
+endmodule

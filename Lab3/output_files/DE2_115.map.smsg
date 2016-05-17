@@ -1,0 +1,2 @@
+Info (10281): Verilog HDL Declaration information at AudioRecorder.sv(5): object "pause" differs only in case from object "PAUSE" in the same scope File: /home/jfj/DCLab/Lab3/AudioRecorder.sv Line: 5
+Info (10281): Verilog HDL Declaration information at AudioPlayer.sv(5): object "pause" differs only in case from object "PAUSE" in the same scope File: /home/jfj/DCLab/Lab3/AudioPlayer.sv Line: 5

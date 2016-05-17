@@ -1,0 +1,35 @@
+
+State Machine - |DE2_115|top:top_module|state_r
+Name state_r.P_PLAY state_r.PLAY state_r.P_REC state_r.REC state_r.IDLE state_r.INIT 
+state_r.INIT 0 0 0 0 0 0 
+state_r.IDLE 0 0 0 0 1 1 
+state_r.REC 0 0 0 1 0 1 
+state_r.P_REC 0 0 1 0 0 1 
+state_r.PLAY 0 1 0 0 0 1 
+state_r.P_PLAY 1 0 0 0 0 1 
+
+State Machine - |DE2_115|top:top_module|AudioPlayer:audi_player|state_r
+Name state_r.END state_r.PAUSE state_r.SEND_FAST state_r.SEND_SLOW state_r.CON state_r.GET_DATA state_r.IDLE 
+state_r.IDLE 0 0 0 0 0 0 0 
+state_r.GET_DATA 0 0 0 0 0 1 1 
+state_r.CON 0 0 0 0 1 0 1 
+state_r.SEND_SLOW 0 0 0 1 0 0 1 
+state_r.SEND_FAST 0 0 1 0 0 0 1 
+state_r.PAUSE 0 1 0 0 0 0 1 
+state_r.END 1 0 0 0 0 0 1 
+
+State Machine - |DE2_115|top:top_module|AudioRecorder:audi_recorder|state_r
+Name state_r.END state_r.PAUSE state_r.CON state_r.SEND_DATA state_r.GET_DATA state_r.IDLE 
+state_r.IDLE 0 0 0 0 0 0 
+state_r.GET_DATA 0 0 0 0 1 1 
+state_r.SEND_DATA 0 0 0 1 0 1 
+state_r.CON 0 0 1 0 0 1 
+state_r.PAUSE 0 1 0 0 0 1 
+state_r.END 1 0 0 0 0 1 
+
+State Machine - |DE2_115|top:top_module|I2cInitialize:i2cinit|I2cSender:i2c_sender|state_r
+Name state_r.START state_r.ACK state_r.TX state_r.FIN 
+state_r.FIN 0 0 0 0 
+state_r.TX 0 0 1 1 
+state_r.ACK 0 1 0 1 
+state_r.START 1 0 0 1 

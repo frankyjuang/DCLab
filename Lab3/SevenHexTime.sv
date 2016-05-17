@@ -28,6 +28,8 @@ module SevenHexTime(
 	always_comb begin
         digit_ten = i_time / 10;
         digit_one = i_time % 10;
+        o_seven_ten = DCON;
+        o_seven_one = DCON;
 		case(digit_ten)
 			4'h0: begin o_seven_ten = D0; end
 			4'h1: begin o_seven_ten = D1; end

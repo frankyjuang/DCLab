@@ -14,11 +14,11 @@ module SevenHexAlphabet(
 	 */
 
 	parameter DA    = 7'b0001000;
-	parameter DC    = 7'b0000110;
+	parameter DC    = 7'b1000110;
 	parameter DD    = 7'b0100001;
 	parameter DE    = 7'b0000110;
 	parameter DI    = 7'b1111001;
-	parameter DL    = 7'b0111000;
+	parameter DL    = 7'b1000111;
 	parameter DP    = 7'b0001100;
 	parameter DR    = 7'b1001110;
 	parameter DS    = 7'b0010010;
