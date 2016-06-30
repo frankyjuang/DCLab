@@ -660,6 +660,15 @@ DIP_Controller		u1	(	//	Host Side
 							.iRed(Read_DATA2[9:0]),
 							.iGreen({Read_DATA1[14:10],Read_DATA2[14:10]}),
 							.iBlue(Read_DATA1[9:0]),
+                            .iDraw(sCCD_DVAL),
+                            //  SRAM Side
+                            .oSRAM_ADDR(SRAM_ADDR),
+                            .oSRAM_CE_N(SRAM_CE_N),
+                            .ioSRAM_DQ(SRAM_DQ),
+                            .oSRAM_LB_N(SRAM_LB_N),
+                            .oSRAM_OE_N(SRAM_OE_N),
+                            .oSRAM_UB_N(SRAM_UB_N),
+                            .oSRAM_WE_N(SRAM_WE_N),
 							//	VGA Side
 							.oVGA_R(oVGA_R),
 							.oVGA_G(oVGA_G),
