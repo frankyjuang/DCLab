@@ -4,3 +4,5 @@ Past\ Reports
 */nWaveLog
 novas.*
 *.fsdb
+*.db_info
+*.flock

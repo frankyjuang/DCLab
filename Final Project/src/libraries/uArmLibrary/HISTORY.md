@@ -1,15 +1,62 @@
+# uArm Arduino Library Release Note
+
+## [1.7.1] - 2016-06-28
+
+### Fix
+- Set Current angle after attach servo
+- rewrite set_servo_status replace attach_servo detach_servo
+
+## [1.7.0] - 2016-06-24
+
+### Fix
+- Update examples Calibration.ino, movement.ino, Add new UArmTextControl2.0.ino
+- Update uarm_library.h make some protected value be public
+- Move All source code to src folder
+- Create Docs folder to store Doxygen Configure & Html header footer files
+
+## [1.6.2] - 2016-06-24
+
+### Fix
+- Change Lots of function names according to Programming Rules
+
+## [1.6.1] - 2016-06-22
+
+### Fix
+- Fix MoveTo Lock Hand Servo issue.
+
+
+## [1.6.0] - 2016-06-20
+
+### Fix
+- Add Limit for x*x + y*y < 32, Fix When x*x + y*y > 32 uArm will get wired position
+
+### Changes
+
+- Rewrite Servo.h to UFServo.h, using float when servo.write(), increase accuracy
+- Rewrite uArmFimata to UArmProtocol.ino   
+
+
+## [1.5.11] - 2016-06-07
+
+### Fix
+- Fix Test.ino unused function
+- Update Code Format
+
+## [1.5.10] - 2016-06-07
+
+### Fix
+- At moveToAtOnce(x,y,z)
+
+## [1.5.9] - 2016-06-01
+
+### Fix
+- Fix writeStretch() offset address not correct
+
 ## [1.5.8] - 2016-05-07
 
 ### Fix
 - Speed up Calibration, reduce delay
 - Use writeAngle() Function in MoveTo
-
-## [1.5.7] - 2016-05-07
-
-### Fix
-
-- Update SERVO_OFFST_ADDRESS to MANUAL_OFFSET_ADDRESS
-- Update indent for syntax
 
 ### Changes
 
