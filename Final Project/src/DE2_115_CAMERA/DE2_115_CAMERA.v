@@ -660,7 +660,7 @@ DIP_Controller		u1	(	//	Host Side
 							.iRed(Read_DATA2[9:0]),
 							.iGreen({Read_DATA1[14:10],Read_DATA2[14:10]}),
 							.iBlue(Read_DATA1[9:0]),
-                            .iDraw(sCCD_DVAL),
+                            .iDraw(!KEY[2]),
                             //  SRAM Side
                             .oSRAM_ADDR(SRAM_ADDR),
                             .oSRAM_CE_N(SRAM_CE_N),

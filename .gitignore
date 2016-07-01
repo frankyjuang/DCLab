@@ -6,3 +6,11 @@ novas.*
 *.fsdb
 *.db_info
 *.flock
+*.rpt
+*.done
+*.smsg
+*.summary
+*.jdi
+*.sld
+**/db
+**/incremental_db

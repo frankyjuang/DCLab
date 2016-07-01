@@ -173,7 +173,7 @@ logic	[12:0]		v_mask;
 ///////////////////////////////////
 
 // buffers
-logic [9:0] buffer_gray_r[NUM_PIXELS:0], buffer_gray_w[NUM_PIXELS:0];   // gray buffer for output
+//logic [9:0] buffer_gray_r[NUM_PIXELS:0], buffer_gray_w[NUM_PIXELS:0];   // gray buffer for output
 
 // sram
 logic [20:0] sram_addr_r, sram_addr_w;                                  // sram address
@@ -184,6 +184,7 @@ logic [15:0] sram_read_buffer_r, sram_read_buffer_w;                    // buffe
 // other
 logic [3:0] state_r, state_w; // states
 logic [19:0] rw_counter_r, rw_counter_w;                                // counter for reading and writing
+logic start_dip_r, start_dip_w;  //indicates whether screenshot is done and should start processing
 //logic dip_done_r, dip_done_w;                                           // indicates whether DIP is done
 
 
@@ -196,112 +197,10 @@ assign  oSRAM_UB_N  =   ub_r;
 assign  oSRAM_LB_N  =   lb_r;
 assign  oSRAM_ADDR  =   sram_addr_r;
 assign  ioSRAM_DQ   =   (oSRAM_WE_N) ? 'z : sram_write_buffer_r;
+//assign  ioSRAM_DQ   =   (oSRAM_WE_N) ? 'z : sram_write_buffer_r;
 
 ////////////////////////////////////////////////////////
 
-assign	mVGA_BLANK	=	mVGA_H_SYNC_r & mVGA_V_SYNC_r;
-assign	mVGA_SYNC	=	1'b0;
-
-assign	mVGA_R	=	(	H_Cont>=X_START 	&& H_Cont<X_START+H_SYNC_ACT &&
-						V_Cont>=Y_START+v_mask 	&& V_Cont<Y_START+V_SYNC_ACT )
-						?	iRed	:	0;
-assign	mVGA_G	=	(	H_Cont>=X_START 	&& H_Cont<X_START+H_SYNC_ACT &&
-						V_Cont>=Y_START+v_mask 	&& V_Cont<Y_START+V_SYNC_ACT )
-						?	iGreen	:	0;
-assign	mVGA_B	=	(	H_Cont>=X_START 	&& H_Cont<X_START+H_SYNC_ACT &&
-						V_Cont>=Y_START+v_mask 	&& V_Cont<Y_START+V_SYNC_ACT )
-						?	iBlue	:	0;
-
-/*
-always@(posedge iCLK or negedge iRST_N)
-	begin
-		if (!iRST_N)
-			begin
-				oVGA_R <= 0;
-				oVGA_G <= 0;
-                oVGA_B <= 0;
-				oVGA_BLANK <= 0;
-				oVGA_SYNC <= 0;
-				oVGA_H_SYNC <= 0;
-				oVGA_V_SYNC <= 0;
-			end
-		else
-			begin
-				oVGA_R <= mVGA_R;
-				oVGA_G <= mVGA_G;
-                oVGA_B <= mVGA_B;
-				oVGA_BLANK <= mVGA_BLANK;
-				oVGA_SYNC <= mVGA_SYNC;
-				oVGA_H_SYNC <= mVGA_H_SYNC;
-				oVGA_V_SYNC <= mVGA_V_SYNC;
-			end
-	end
-
-//	Pixel LUT Address Generator
-always@(posedge iCLK or negedge iRST_N)
-begin
-	if(!iRST_N)
-	oRequest	<=	0;
-	else
-	begin
-		if(	H_Cont>=X_START-2 && H_Cont<X_START+H_SYNC_ACT-2 &&
-			V_Cont>=Y_START && V_Cont<Y_START+V_SYNC_ACT )
-		oRequest	<=	1;
-		else
-		oRequest	<=	0;
-	end
-end
-
-//	H_Sync Generator, Ref. 40 MHz Clock
-always@(posedge iCLK or negedge iRST_N)
-begin
-	if(!iRST_N)
-	begin
-		H_Cont		<=	0;
-		mVGA_H_SYNC	<=	0;
-	end
-	else
-	begin
-		//	H_Sync Counter
-		if( H_Cont < H_SYNC_TOTAL )
-		H_Cont	<=	H_Cont+1;
-		else
-		H_Cont	<=	0;
-		//	H_Sync Generator
-		if( H_Cont < H_SYNC_CYC )
-		mVGA_H_SYNC	<=	0;
-		else
-		mVGA_H_SYNC	<=	1;
-	end
-end
-
-//	V_Sync Generator, Ref. H_Sync
-always@(posedge iCLK or negedge iRST_N)
-begin
-	if(!iRST_N)
-	begin
-		V_Cont		<=	0;
-		mVGA_V_SYNC	<=	0;
-	end
-	else
-	begin
-		//	When H_Sync Re-start
-		if(H_Cont==0)
-		begin
-			//	V_Sync Counter
-			if( V_Cont < V_SYNC_TOTAL )
-			V_Cont	<=	V_Cont+1;
-			else
-			V_Cont	<=	0;
-			//	V_Sync Generator
-			if(	V_Cont < V_SYNC_CYC )
-			mVGA_V_SYNC	<=	0;
-			else
-			mVGA_V_SYNC	<=	1;
-		end
-	end
-end
-*/
 
 always_comb begin
     // request
@@ -329,42 +228,119 @@ always_comb begin
     // other
     state_w             =  state_r;
     rw_counter_w        =  rw_counter_r;
+    start_dip_w         =  start_dip_r;
 
+    // check whether to start DIP
+    if( iDraw )
+        start_dip_w = 1;
+
+    ////////////////////////////////////
+    //       VGA Sync Signals         //
+    ////////////////////////////////////
+    // H_Sync Generator, Ref. 40 MHz Clock
+    // H_Sync Counter
+    if( H_Cont_r < H_SYNC_TOTAL )
+        H_Cont_w = H_Cont_r + 1;
+    else
+        H_Cont_w = 0;
+    //	H_Sync Generator
+    if( H_Cont_r < H_SYNC_CYC )
+        mVGA_H_SYNC_w = 0;
+    else
+        mVGA_H_SYNC_w = 1;
+
+    //	V_Sync Generator, Ref. H_Sync
+    //	When H_Sync Re-start
+    if(H_Cont_r == 0) begin
+        //	V_Sync Counter
+        if( V_Cont_r < V_SYNC_TOTAL )
+            V_Cont_w = V_Cont_r + 1;
+        else
+            V_Cont_w = 0;
+        //	V_Sync Generator
+        if(	V_Cont_r < V_SYNC_CYC )
+            mVGA_V_SYNC_w = 0;
+        else
+            mVGA_V_SYNC_w = 1;
+    end
+
+    //////////////////////////////////
+    //      State Operations        //
+    //////////////////////////////////
     case(state_r)
         VIDEO_MODE:
             begin
+                // assign VGA outputs
+                mVGA_BLANK_w	=	mVGA_H_SYNC_r & mVGA_V_SYNC_r;   
+                mVGA_SYNC_w	    =	1'b0;
+
+                mVGA_R_w	    =	(	H_Cont_r>=X_START 	&& H_Cont_r<X_START+H_SYNC_ACT &&
+						V_Cont_r>=Y_START+v_mask 	&& V_Cont_r<Y_START+V_SYNC_ACT )
+						?	iRed	:	0;
+                mVGA_G_w	    =	(	H_Cont_r>=X_START 	&& H_Cont_r<X_START+H_SYNC_ACT &&
+						V_Cont_r>=Y_START+v_mask 	&& V_Cont_r<Y_START+V_SYNC_ACT )
+						?	iGreen	:	0;
+                mVGA_B_w	    =	(	H_Cont_r>=X_START 	&& H_Cont_r<X_START+H_SYNC_ACT &&
+						V_Cont_r>=Y_START+v_mask 	&& V_Cont_r<Y_START+V_SYNC_ACT )
+						?	iBlue	:	0;
+
                 // Pixel LUT Address Generator
-                if( H_Cont_r>=X_START 2 && H_Cont_r<X_START+H_SYNC_ACT  2 &&
+                if( H_Cont_r>=X_START-2 && H_Cont_r<X_START+H_SYNC_ACT-2 &&
                     V_Cont_r>=Y_START && V_Cont_r<Y_START+V_SYNC_ACT )
 		            oRequest_w = 1;
 		        else
 		            oRequest_w = 0;
+
+                // Switch to Read buffer state
+                if(start_dip_r && H_Cont_r == 0 && V_Cont_r == 0) begin
+                    state_w = READ_BUFFER_MODE;
                 end
-                // H_Sync Generator, Ref. 40 MHz Clock
-                //
-                // H_Sync Counter
-                if( H_Cont_r < H_SYNC_TOTAL )
-                    H_Cont_w = H_Cont_r + 1;
+            end
+        READ_BUFFER_MODE:
+            begin
+                // Pixel LUT Address Generator
+                if( H_Cont_r>=X_START-2 && H_Cont_r<X_START+H_SYNC_ACT-2 &&
+                    V_Cont_r>=Y_START && V_Cont_r<Y_START+V_SYNC_ACT ) begin
+		            oRequest_w = 1;
+                end else begin
+		            oRequest_w = 0;
+                end
+
+                // prepare data and address for writing to sram
+                if(	H_Cont_r>=X_START 	&& H_Cont_r<X_START+H_SYNC_ACT &&
+                    V_Cont_r>=Y_START+v_mask 	&& V_Cont_r<Y_START+V_SYNC_ACT ) begin
+                    sram_write_buffer_w = (299 * iRed + 587 * iGreen + 114 * iBlue) / 1000;
+                    sram_addr_w = (H_Cont_r - X_START) + (V_Cont_r - Y_START) * H_SYNC_ACT;
+                end
+
+                // write to sram
+                if( H_Cont_r>=X_START+1 && H_Cont_r<X_START+H_SYNC_ACT+1 &&
+                    V_Cont_r>=Y_START+v_mask    && V_Cont_r<Y_START+V_SYNC_ACT )
+                    we_w = 0;
                 else
-                    H_Cont_w = 0;
-                //	H_Sync Generator
-                if( H_Cont_r < H_SYNC_CYC )
-                    mVGA_H_SYNC_w = 0;
-                else
-                    mVGA_H_SYNC_w = 1;
-                //	V_Sync Generator, Ref. H_Sync
-                //	When H_Sync Re-start
-                if(H_Cont_r == 0) begin
-                    //	V_Sync Counter
-                    if( V_Cont_r < V_SYNC_TOTAL )
-                        V_Cont_w = V_Cont_r + 1;
-                    else
-                        V_Cont_w = 0;
-                    //	V_Sync Generator
-                    if(	V_Cont_r < V_SYNC_CYC )
-                        mVGA_V_SYNC_w = 0;
-                    else
-                        mVGA_V_SYNC_w = 1;
+                    we_w = 1;
+
+                // transition to DIP state
+                if( H_Cont_r>=X_START+H_SYNC_ACT+1 && V_Cont_r>=Y_START+V_SYNC_ACT )
+                    state_w = DIP_MODE;
+            end
+        DIP_MODE:
+            begin
+                state_w = WRITE_BUFFER_MODE;
+            end
+        WRITE_BUFFER_MODE:
+            begin
+                // set sram read address
+                if(	H_Cont_r>=X_START-2 	&& H_Cont_r<X_START+H_SYNC_ACT-2 &&
+                    V_Cont_r>=Y_START+v_mask 	&& V_Cont_r<Y_START+V_SYNC_ACT ) begin
+                    sram_addr_w = (H_Cont_r - X_START + 2) + (V_Cont_r - Y_START) * H_SYNC_ACT;
+                end
+                // read data from sram
+                if(	H_Cont_r>=X_START-1 	&& H_Cont_r<X_START+H_SYNC_ACT-1 &&
+                    V_Cont_r>=Y_START+v_mask 	&& V_Cont_r<Y_START+V_SYNC_ACT ) begin
+                    mVGA_R_w = ioSRAM_DQ[9:0];
+                    mVGA_G_w = ioSRAM_DQ[9:0];
+                    mVGA_B_w = ioSRAM_DQ[9:0];
                 end
             end
     endcase
@@ -397,6 +373,7 @@ always_ff@(posedge iCLK or negedge iRST_N) begin
         // other
         state_r             <=  0;
         rw_counter_r        <=  0;
+        start_dip_r         <=  0;
 
     end else begin
         // request
@@ -406,8 +383,8 @@ always_ff@(posedge iCLK or negedge iRST_N) begin
         V_Cont_r            <=  V_Cont_w;
         // VGA
         mVGA_R_r            <=  mVGA_R_w;
-        mVGA_G_r            <=  mVGA_R_w;
-        mVGA_B_r            <=  mVGA_R_w;
+        mVGA_G_r            <=  mVGA_G_w;
+        mVGA_B_r            <=  mVGA_B_w;
         mVGA_BLANK_r        <=  mVGA_BLANK_w;
         mVGA_SYNC_r         <=  mVGA_SYNC_w;
         mVGA_H_SYNC_r       <=  mVGA_H_SYNC_w;
@@ -424,6 +401,7 @@ always_ff@(posedge iCLK or negedge iRST_N) begin
         // other
         state_r             <=  state_w;
         rw_counter_r        <=  rw_counter_w;
+        start_dip_r         <=  start_dip_w;
     end
 end
 
