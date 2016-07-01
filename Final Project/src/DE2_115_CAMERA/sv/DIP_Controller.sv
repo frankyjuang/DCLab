@@ -173,13 +173,37 @@ logic	[12:0]		v_mask;
 ///////////////////////////////////
 
 // buffers
-//logic [9:0] buffer_gray_r[NUM_PIXELS:0], buffer_gray_w[NUM_PIXELS:0];   // gray buffer for output
+logic out_ce, out_oe, out_we, out_ub, out_lb;       // sram flags for output
+logic [20:0] out_sram_addr;                                  // sram address
+logic [15:0] out_sram_dq;
 
 // sram
 logic [20:0] sram_addr_r, sram_addr_w;                                  // sram address
 logic ce_r, ce_w, oe_r, oe_w, we_r, we_w, ub_r, ub_w, lb_r, lb_w;       // sram flags
 logic [15:0] sram_write_buffer_r, sram_write_buffer_w;                  // buffer for writing to sram
 logic [15:0] sram_read_buffer_r, sram_read_buffer_w;                    // buffer for reading from sram
+
+// filter controller
+logic [20:0] fc_sram_addr;
+logic fc_ce, fc_oe, fc_we, fc_ub, fc_lb;
+logic fc_sram_
+logic fc_start_r, fc_start_w;
+logic fc_done;
+logic fc_sram_dq;
+
+Filter_Controller filter_controller (
+    .iStart(fc_start_r),
+    .iRst(iRST_N),
+    .iClk(iCLK),
+    .ioSram_dq(fc_sram_dq),
+    .oSram_addr(fc_sram_addr),
+    .oSram_ce_n(fc_ce),
+    .oSram_we_n(fc_we),
+    .oSram_oe_n(fc_oe),
+    .oSram_ub_n(fc_ub),
+    .oSram_lb_n(fc_lb),
+    .oDone(fc_done)
+);
 
 // other
 logic [3:0] state_r, state_w; // states
@@ -190,19 +214,41 @@ logic start_dip_r, start_dip_w;  //indicates whether screenshot is done and shou
 
 assign v_mask = 13'd0 ;//iZOOM_MODE_SW ? 13'd0 : 13'd26;
 ////////////////////////////////////
-assign  oSRAM_CE_N  =   ce_r;
-assign  oSRAM_OE_N  =   oe_r;
-assign  oSRAM_WE_N  =   we_r;
-assign  oSRAM_UB_N  =   ub_r;
-assign  oSRAM_LB_N  =   lb_r;
-assign  oSRAM_ADDR  =   sram_addr_r;
-assign  ioSRAM_DQ   =   (oSRAM_WE_N) ? 'z : sram_write_buffer_r;
-//assign  ioSRAM_DQ   =   (oSRAM_WE_N) ? 'z : sram_write_buffer_r;
+assign  oSRAM_CE_N  =   out_ce;
+assign  oSRAM_OE_N  =   out_oe;
+assign  oSRAM_WE_N  =   out_we;
+assign  oSRAM_UB_N  =   out_ub;
+assign  oSRAM_LB_N  =   out_lb;
+assign  oSRAM_ADDR  =   out_sram_addr;
+assign  ioSRAM_DQ   =   out_sram_dq;
 
 ////////////////////////////////////////////////////////
 
 
 always_comb begin
+    //////////////////////////////////
+    //    Multiplex SRAM Signals    //
+    //////////////////////////////////
+    if (state_r != DIP_MODE) begin
+        out_ce = ce_r;
+        out_oe = oe_r;
+        out_we = we_r;
+        out_ub = ub_r;
+        out_lb = lb_r;
+        out_sram_addr = sram_addr_r;
+        out_sram_dq = (oSRAM_WE_N) ? 'z : sram_write_buffer_r;
+    end else begin
+        out_ce = fc_ce;
+        out_oe = fc_oe;
+        out_we = fc_we;
+        out_ub = fc_ub;
+        out_lb = fc_lb;
+        out_sram_addr = fc_sram_addr;
+        out_sram_dq = fc_sram_dq;
+    end
+    //////////////////////////////////
+    //       Init signals           //
+    //////////////////////////////////
     // request
     oRequest_w          =  oRequest_r;
     // H & V control
@@ -229,6 +275,7 @@ always_comb begin
     state_w             =  state_r;
     rw_counter_w        =  rw_counter_r;
     start_dip_w         =  start_dip_r;
+    fc_start_w          =  fc_start_r;
 
     // check whether to start DIP
     if( iDraw )
@@ -321,12 +368,16 @@ always_comb begin
                     we_w = 1;
 
                 // transition to DIP state
-                if( H_Cont_r>=X_START+H_SYNC_ACT+1 && V_Cont_r>=Y_START+V_SYNC_ACT )
+                if( H_Cont_r>=X_START+H_SYNC_ACT+1 && V_Cont_r>=Y_START+V_SYNC_ACT ) begin
                     state_w = DIP_MODE;
+                    fc_start_w = 1;
             end
         DIP_MODE:
             begin
-                state_w = WRITE_BUFFER_MODE;
+                if (fc_start_w)
+                    fc_start_w = 0;
+                if (fc_done)
+                    state_w = WRITE_BUFFER_MODE;
             end
         WRITE_BUFFER_MODE:
             begin
@@ -341,6 +392,10 @@ always_comb begin
                     mVGA_R_w = ioSRAM_DQ[9:0];
                     mVGA_G_w = ioSRAM_DQ[9:0];
                     mVGA_B_w = ioSRAM_DQ[9:0];
+                end else begin
+                    mVGA_R_w = 0;
+                    mVGA_G_w = 0;
+                    mVGA_B_w = 0;
                 end
             end
     endcase
@@ -374,6 +429,8 @@ always_ff@(posedge iCLK or negedge iRST_N) begin
         state_r             <=  0;
         rw_counter_r        <=  0;
         start_dip_r         <=  0;
+        // modules
+        fc_start_r          <=  0;
 
     end else begin
         // request
@@ -402,6 +459,8 @@ always_ff@(posedge iCLK or negedge iRST_N) begin
         state_r             <=  state_w;
         rw_counter_r        <=  rw_counter_w;
         start_dip_r         <=  start_dip_w;
+        // modules
+        fc_start_r          <=  fc_start_w;
     end
 end
 
