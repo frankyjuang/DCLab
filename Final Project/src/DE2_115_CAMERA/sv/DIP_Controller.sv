@@ -114,6 +114,8 @@ parameter   READ_BUFFER_MODE    = 4'b0001;
 parameter   DIP_MODE            = 4'b0010;
 parameter   WRITE_BUFFER_MODE   = 4'b0011;
 
+parameter   FINAL_START_ADDR    = 640 * 480;
+
 //	Host Side
 input		[9:0]	iRed;
 input		[9:0]	iGreen;
@@ -140,9 +142,7 @@ logic				mVGA_V_SYNC_r, mVGA_V_SYNC_w;
 logic				mVGA_SYNC_r, mVGA_SYNC_w;
 logic				mVGA_BLANK_r, mVGA_BLANK_w;
 
-assign  oVGA_R          =   mVGA_R_r;
-assign  oVGA_G          =   mVGA_G_r;
-assign  oVGA_B          =   mVGA_B_r;
+assign  oVGA_R          =   mVGA_R_r; assign  oVGA_G          =   mVGA_G_r; assign  oVGA_B          =   mVGA_B_r;
 assign  oVGA_H_SYNC     =   mVGA_H_SYNC_r;
 assign  oVGA_V_SYNC     =   mVGA_V_SYNC_r;
 assign  oVGA_SYNC       =   mVGA_SYNC_r;
@@ -151,7 +151,7 @@ assign  oVGA_BLANK      =   mVGA_BLANK_r;
 //  SRAM Side
 output  reg [19:0]  oSRAM_ADDR;
 output  reg         oSRAM_CE_N;
-inout   reg [15:0]  ioSRAM_DQ;
+inout   wire [15:0]  ioSRAM_DQ;
 output  reg         oSRAM_LB_N;
 output  reg         oSRAM_OE_N;
 output  reg         oSRAM_UB_N;
@@ -174,18 +174,18 @@ logic	[12:0]		v_mask;
 
 // buffers
 logic out_ce, out_oe, out_we, out_ub, out_lb;       // sram flags for output
-logic [20:0] out_sram_addr;                                  // sram address
+logic [19:0] out_sram_addr;                                  // sram address
 wire [15:0] out_sram_dq;
 
 // sram
-logic [20:0] sram_addr_r, sram_addr_w;                                  // sram address
+logic [19:0] sram_addr_r, sram_addr_w;                                  // sram address
 logic ce_r, ce_w, oe_r, oe_w, we_r, we_w, ub_r, ub_w, lb_r, lb_w;       // sram flags
 logic [15:0] sram_write_buffer_r, sram_write_buffer_w;                  // buffer for writing to sram
 logic [15:0] sram_read_buffer_r, sram_read_buffer_w;                    // buffer for reading from sram
 
 // filter controller
-logic [20:0] fc_sram_addr;
-wire [15:0] fc_sram_dq;
+logic [19:0] fc_sram_addr;
+logic [15:0] fc_sram_dq_r, fc_sram_dq_w;
 logic fc_ce, fc_oe, fc_we, fc_ub, fc_lb;
 logic fc_start_r, fc_start_w;
 logic fc_done;
@@ -194,7 +194,8 @@ Filter_Controller filter_controller (
     .iStart(fc_start_r),
     .iRst(iRST_N),
     .iClk(iCLK),
-    .ioSram_dq(fc_sram_dq),
+    .iSram_dq(fc_sram_dq_r),
+    .oSram_dq(fc_sram_dq_w),
     .oSram_addr(fc_sram_addr),
     .oSram_ce_n(fc_ce),
     .oSram_we_n(fc_we),
@@ -224,6 +225,15 @@ assign  ioSRAM_DQ   =   out_sram_dq;
 ////////////////////////////////////////////////////////
 
 
+always_ff @(posedge iCLK or negedge iRST_N) begin
+    if (!iRST_N)
+        fc_sram_dq_r <= 0;
+    else if (fc_we)
+        fc_sram_dq_r <= out_sram_dq;
+    else 
+        fc_sram_dq_r <= fc_sram_dq_w;
+end
+
 always_comb begin
     //////////////////////////////////
     //    Multiplex SRAM Signals    //
@@ -235,7 +245,7 @@ always_comb begin
         out_ub = ub_r;
         out_lb = lb_r;
         out_sram_addr = sram_addr_r;
-        out_sram_dq = (oSRAM_WE_N) ? 'z : sram_write_buffer_r;
+        out_sram_dq = (out_we) ? 'z : sram_write_buffer_r;
     end else begin
         out_ce = fc_ce;
         out_oe = fc_oe;
@@ -243,7 +253,7 @@ always_comb begin
         out_ub = fc_ub;
         out_lb = fc_lb;
         out_sram_addr = fc_sram_addr;
-        out_sram_dq = fc_sram_dq;
+        out_sram_dq = (out_we) ? 'z : fc_sram_dq_r;
     end
     //////////////////////////////////
     //       Init signals           //
@@ -355,7 +365,7 @@ always_comb begin
                 // prepare data and address for writing to sram
                 if(	H_Cont_r>=X_START 	&& H_Cont_r<X_START+H_SYNC_ACT &&
                     V_Cont_r>=Y_START+v_mask 	&& V_Cont_r<Y_START+V_SYNC_ACT ) begin
-                    sram_write_buffer_w = (299 * iRed + 587 * iGreen + 114 * iBlue) / 1000;
+                    sram_write_buffer_w = (299 * iRed[9:2] + 587 * iGreen[9:2] + 114 * iBlue[9:2]) / 1000;
                     sram_addr_w = (H_Cont_r - X_START) + (V_Cont_r - Y_START) * H_SYNC_ACT;
                 end
 
@@ -382,16 +392,17 @@ always_comb begin
         WRITE_BUFFER_MODE:
             begin
                 // set sram read address
-                if(	H_Cont_r>=X_START-2 	&& H_Cont_r<X_START+H_SYNC_ACT-2 &&
-                    V_Cont_r>=Y_START+v_mask 	&& V_Cont_r<Y_START+V_SYNC_ACT ) begin
-                    sram_addr_w = (H_Cont_r - X_START + 2) + (V_Cont_r - Y_START) * H_SYNC_ACT;
-                end
-                // read data from sram
                 if(	H_Cont_r>=X_START-1 	&& H_Cont_r<X_START+H_SYNC_ACT-1 &&
                     V_Cont_r>=Y_START+v_mask 	&& V_Cont_r<Y_START+V_SYNC_ACT ) begin
-                    mVGA_R_w = ioSRAM_DQ[9:0];
-                    mVGA_G_w = ioSRAM_DQ[9:0];
-                    mVGA_B_w = ioSRAM_DQ[9:0];
+                    //sram_addr_w = FINAL_START_ADDR + (H_Cont_r - X_START + 1) + (V_Cont_r - Y_START) * H_SYNC_ACT;
+                    sram_addr_w = (H_Cont_r - X_START + 1) + (V_Cont_r - Y_START) * H_SYNC_ACT;
+                end
+                // read data from sram
+                if(	H_Cont_r>=X_START 	&& H_Cont_r<X_START+H_SYNC_ACT &&
+                    V_Cont_r>=Y_START+v_mask 	&& V_Cont_r<Y_START+V_SYNC_ACT ) begin
+                    mVGA_R_w[9:2] = out_sram_dq[7:0];
+                    mVGA_G_w[9:2] = out_sram_dq[7:0];
+                    mVGA_B_w[9:2] = out_sram_dq[7:0];
                 end else begin
                     mVGA_R_w = 0;
                     mVGA_G_w = 0;

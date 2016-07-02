@@ -71,8 +71,8 @@ always_comb begin
             end
         CALC:
             begin
-                for (counter_w=1; counter_w < 625; counter_w=counter_w+1) begin
-                    sum_w = sum_w + FIL_COEFFS[counter_w] * iData[counter_w];
+                for (int i=1; i < 625; i=i+1) begin
+                    sum_w = sum_w + FIL_COEFFS[i] * iData[i];
                 end
                 state_w = IDLE;
                 done_w = 1;
