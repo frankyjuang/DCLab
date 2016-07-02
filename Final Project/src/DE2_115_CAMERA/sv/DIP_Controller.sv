@@ -175,7 +175,7 @@ logic	[12:0]		v_mask;
 // buffers
 logic out_ce, out_oe, out_we, out_ub, out_lb;       // sram flags for output
 logic [20:0] out_sram_addr;                                  // sram address
-logic [15:0] out_sram_dq;
+wire [15:0] out_sram_dq;
 
 // sram
 logic [20:0] sram_addr_r, sram_addr_w;                                  // sram address
@@ -185,11 +185,10 @@ logic [15:0] sram_read_buffer_r, sram_read_buffer_w;                    // buffe
 
 // filter controller
 logic [20:0] fc_sram_addr;
+wire [15:0] fc_sram_dq;
 logic fc_ce, fc_oe, fc_we, fc_ub, fc_lb;
-logic fc_sram_
 logic fc_start_r, fc_start_w;
 logic fc_done;
-logic fc_sram_dq;
 
 Filter_Controller filter_controller (
     .iStart(fc_start_r),
@@ -371,10 +370,11 @@ always_comb begin
                 if( H_Cont_r>=X_START+H_SYNC_ACT+1 && V_Cont_r>=Y_START+V_SYNC_ACT ) begin
                     state_w = DIP_MODE;
                     fc_start_w = 1;
+                end
             end
         DIP_MODE:
             begin
-                if (fc_start_w)
+                if (fc_start_r)
                     fc_start_w = 0;
                 if (fc_done)
                     state_w = WRITE_BUFFER_MODE;
