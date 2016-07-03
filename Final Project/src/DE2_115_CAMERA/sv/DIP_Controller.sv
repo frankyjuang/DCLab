@@ -160,7 +160,7 @@ output  reg         oSRAM_UB_N;
 output  reg         oSRAM_WE_N;
 
 logic [19:0] sram_addr_r, sram_addr_w;                                  // sram address
-logic we_r, we_w                                                        // sram write flag
+logic we_r, we_w;                                                        // sram write flag
 logic [15:0] sram_write_buffer_r, sram_write_buffer_w;                  // buffer for writing to sram
 
 assign  oSRAM_CE_N  =   0;
@@ -302,7 +302,7 @@ always_comb begin
 
     // check whether to start DIP
     if( iDraw )
-        start_dip_w = 1;
+        start_read_sdram_w = 1;
 
     ////////////////////////////////////
     //       VGA Sync Signals         //
@@ -392,7 +392,7 @@ always_comb begin
             // transition to DIP state
             if( H_Cont_r>=X_START+H_SYNC_ACT+1 && V_Cont_r>=Y_START+V_SYNC_ACT ) begin
                 state_w = DIP_MODE;
-                fil_start_w = 1;
+                fil_state_w = DIP_FILTER;
                 h_counter_w = 0;
                 v_counter_w = 0;
             end
@@ -410,7 +410,7 @@ always_comb begin
                                 sram_addr_w = BACK_START_ADDR + v_counter_r * H_SYNC_ACT + h_counter_r;
                                 fil_state_w = FIL_WRITE;
                             end else begin
-                                sram_addr_w = FRONT_START_ADDR + (v_counter_r-12) * WIDTH + h_counter_r - 12;
+                                sram_addr_w = FRONT_START_ADDR + (v_counter_r-12) * H_SYNC_ACT + h_counter_r - 12;
                                 fil_state_w = FIL_LOAD_BLOCK;
                                 fil_sum_w = 0;
                             end
@@ -421,7 +421,7 @@ always_comb begin
                                 sram_addr_w = (v_counter_r-12+(load_counter_w/25)) * H_SYNC_ACT + (h_counter_r-12+(load_counter_w%25));
                                 fil_sum_w = fil_sum_r + FIL_COEFFS[load_counter_r] * ioSRAM_DQ[9:0];
                             end else begin
-                                state_w = WRITE;
+                                fil_state_w = FIL_WRITE;
                                 sram_write_buffer_w = ((fil_sum_r + FIL_COEFFS[load_counter_r] * ioSRAM_DQ[9:0]) >> 20);
                                 load_counter_w = 0;
                                 sram_addr_w = BACK_START_ADDR + v_counter_r * H_SYNC_ACT + h_counter_r;
@@ -452,13 +452,14 @@ always_comb begin
                                 fil_orig_val_w = ioSRAM_DQ[9:0];
                                 sram_addr_w = BACK_START_ADDR + sram_addr_r;
                             end else if (load_counter_r < 2) begin
-                                sram_write_buffer_w = fil_orig_val_r/2 + (255 - ioSRAM_DQ[9:0])/2;
+                                //sram_write_buffer_w = fil_orig_val_r/2 + (255 - ioSRAM_DQ[9:0])/2;
+                                sram_write_buffer_w = ioSRAM_DQ[9:0]/2;
                                 sram_addr_w = sram_addr_r - BACK_START_ADDR;
                             end else if (load_counter_r < 3) begin
                                 we_w = 0;
                             end else begin
                                 we_w = 1;
-                                if (addr_r >= BACK_START_ADDR - 1) begin
+                                if (sram_addr_r >= BACK_START_ADDR - 1) begin
                                     fil_state_w = FIL_END;
                                 end else begin
                                     load_counter_w = 0;
@@ -500,9 +501,9 @@ always_comb begin
                 // read data from sram
                 if(	H_Cont_r>=X_START 	&& H_Cont_r<X_START+H_SYNC_ACT &&
                     V_Cont_r>=Y_START+v_mask 	&& V_Cont_r<Y_START+V_SYNC_ACT ) begin
-                    mVGA_R_w[9:2] = out_sram_dq[7:0];
-                    mVGA_G_w[9:2] = out_sram_dq[7:0];
-                    mVGA_B_w[9:2] = out_sram_dq[7:0];
+                    mVGA_R_w[9:2] = ioSRAM_DQ[7:0];
+                    mVGA_G_w[9:2] = ioSRAM_DQ[7:0];
+                    mVGA_B_w[9:2] = ioSRAM_DQ[7:0];
                 end else begin
                     mVGA_R_w = 0;
                     mVGA_G_w = 0;
