@@ -253,6 +253,18 @@ logic   [2:0]   fil_state_r, fil_state_w;
 logic   [39:0]  fil_sum_r, fil_sum_w;
 logic           fil_orig_val_r, fil_orig_val_w;
 
+// Contrast Enhancement
+
+// contrast enhancement states
+parameter   EN_COUNT_HISTO  = 2'b00;
+parameter   EN_COUNT_CUMUL  = 2'b01;
+parameter   EN_ENHANCE      = 2'b10;
+parameter   EN_END          = 2'b11;
+
+// contrast enhancement logics
+logic   [1:0]   en_state_r, en_state_w;
+//logic   [27:0]  en_value_r, en_value_w;
+logic   [18:0]  histo_r [255:0], histo_w [255:0];
 
 
 assign v_mask = 13'd0 ;//iZOOM_MODE_SW ? 13'd0 : 13'd26;
@@ -299,6 +311,10 @@ always_comb begin
     fil_state_w     = fil_state_r;
     fil_sum_w       = fil_sum_r;
     fil_orig_val_w  = fil_orig_val_r;
+
+    // Contrast Enhancement
+    en_state_w      = en_state_r;
+    histo_w         = histo_r;
 
     // check whether to start DIP
     if( iDraw )
@@ -469,12 +485,54 @@ always_comb begin
                         end
                         FIL_END: begin
                             dip_state_w = DIP_ENHANCE;
+                            en_state_w = EN_COUNT_HISTO;
+                            sram_addr_w = FRONT_START_ADDR + 1;
                         end
                     endcase
                 end
 
                 DIP_ENHANCE: begin
-                    dip_state_w = DIP_HISTO;
+                    case(en_state_r)
+                        EN_COUNT_HISTO: begin
+                            if(sram_addr_r < BACK_START_ADDR)  begin
+                                histo_w[ioSRAM_DQ[9:0]] = histo_r[ioSRAM_DQ[9:0]] + 1;
+                                sram_addr_w = sram_addr_r + 1;
+                            end else begin
+                                en_state_w = EN_COUNT_CUMUL;
+                                load_counter_w = 1;
+                            end
+                        end
+                        EN_COUNT_CUMUL: begin
+                            if(load_counter_r < 255) begin
+                                histo_w[load_counter_r] = histo_r[load_counter_r] + histo_r[load_counter_r-1];
+                                load_counter_w = load_counter_r + 1;
+                            end else begin
+                                histo_w[load_counter_r] = histo_r[load_counter_r] + histo_r[load_counter_r-1];
+                                load_counter_w = 0;
+                                en_state_w = EN_ENHANCE;
+                                sram_addr_w = FRONT_START_ADDR;
+                            end
+                        end
+                        EN_ENHANCE: begin
+                            load_counter_w = load_counter_r + 1;
+                            if (load_counter_r == 0) begin
+                                sram_write_buffer_w = ioSRAM_DQ[9:0] * histo_r[ioSRAM_DQ[9:0]] / BACK_START_ADDR;
+                            end else if (load_counter_r == 1) begin
+                                we_w = 0;
+                            end else begin
+                                we_w = 1;
+                                if (sram_addr_r == BACK_START_ADDR - 1) begin
+                                    en_state_w = EN_END;
+                                end else begin
+                                    load_counter_w = 0;
+                                    sram_addr_w = sram_addr_r + 1;
+                                end
+                            end
+                        end
+                        EN_END: begin
+                            dip_state_w = DIP_HISTO;
+                        end
+                    endcase
                 end
 
                 DIP_HISTO: begin
@@ -548,6 +606,11 @@ always_ff@(posedge iCLK or negedge iRST_N) begin
         fil_state_r         <=  FIL_CHECK;
         fil_sum_r           <=  0;
         fil_orig_val_r      <=  0;
+        // contrast enhancement
+        en_state_r          <=  EN_COUNT_HISTO;
+        //en_value_r          <=  0;
+        for (int i=0; i < 255; i=i+1)
+            histo_r[i]      <=  0;
 
     end else begin
         // request
@@ -583,6 +646,10 @@ always_ff@(posedge iCLK or negedge iRST_N) begin
         fil_state_r         <=  fil_state_w;
         fil_sum_r           <=  fil_sum_w;
         fil_orig_val_r      <=  fil_orig_val_w;
+        // contrast enhancement
+        en_state_r          <=  en_state_w;
+        //en_value_r          <=  en_value_w;
+        histo_r             <=  histo_w;
     end
 end
 
