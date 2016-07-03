@@ -255,16 +255,25 @@ logic   [9:0]   fil_orig_val_r, fil_orig_val_w;
 
 // Contrast Enhancement
 
-// contrast enhancement states
 parameter   EN_COUNT_HISTO  = 2'b00;
 parameter   EN_COUNT_CUMUL  = 2'b01;
 parameter   EN_ENHANCE      = 2'b10;
 parameter   EN_END          = 2'b11;
 
-// contrast enhancement logics
 logic   [1:0]   en_state_r, en_state_w;
 //logic   [27:0]  en_value_r, en_value_w;
 logic   [18:0]  histo_r [255:0], histo_w [255:0];
+
+// Histogram Controller
+
+parameter   HIS_COUNT_HISTO = 2'b00;
+parameter   HIS_GET_MAX     = 2'b01;
+parameter   HIS_ELIM        = 2'b10;
+parameter   HIS_END         = 2'b11;
+
+logic   [1:0]   his_state_r, his_state_w;
+logic   [18:0]  his_max_value_r, his_max_value_w;
+logic   [12:0]  his_max_idx_r, his_max_idx_w;
 
 
 assign v_mask = 13'd0 ;//iZOOM_MODE_SW ? 13'd0 : 13'd26;
@@ -315,6 +324,11 @@ always_comb begin
     // Contrast Enhancement
     en_state_w      = en_state_r;
     histo_w         = histo_r;
+
+    // Histogram Controller
+    his_state_w     = his_state_r;
+    his_max_value_w = his_max_value_r;
+    his_max_idx_w   = his_max_idx_r;
 
     // check whether to start DIP
     if( iDraw )
@@ -532,12 +546,64 @@ always_comb begin
                         end
                         EN_END: begin
                             dip_state_w = DIP_HISTO;
+                            his_state_w = HIS_COUNT_HISTO;
+                            sram_addr_w = FRONT_START_ADDR;
+                            for (int i=0; i<255; i=i+1)
+                                histo_w[i] = 0;
                         end
                     endcase
                 end
 
                 DIP_HISTO: begin
-                    dip_state_w = DIP_CLOSING;
+                    case(his_state_r)
+                        HIS_COUNT_HISTO: begin
+                            if (sram_addr_r < BACK_START_ADDR) begin
+                                histo_w[ioSRAM_DQ[9:0]] = histo_r[ioSRAM_DQ[9:0]] + 1;
+                                sram_addr_w = sram_addr_r + 1;
+                            end else begin
+                                his_state_w = HIS_GET_MAX;
+                                load_counter_w = 0;
+                                his_max_value_w = 0;
+                                his_max_idx_w = 0;
+                            end
+                        end
+                        HIS_GET_MAX: begin
+                            load_counter_w = load_counter_r + 1;
+                            if (load_counter_r < 255 && histo_r[load_counter_r] > his_max_value_r) begin
+                                his_max_value_w = histo[load_counter_r];
+                                his_max_idx_w = load_counter_r;
+                            end else if (load_counter_r >= 255) begin
+                                load_counter_w = 0;
+                                his_state_w = HIS_ELIM;
+                                sram_addr_w = FRONT_START_ADDR;
+                                his_max_idx_w = 17 * his_max_idx_r / 20;
+                            end
+                        end
+                        HIS_ELIM: begin
+                            load_counter_w = load_counter_r + 1;
+                            if (load_counter_r == 0) begin
+                                if (ioSRAM_DQ[9:0] > his_max_idx_r) begin
+                                    sram_write_buffer_w = 255;
+                                end else begin
+                                    load_counter_w = 0;
+                                    sram_addr_w = sram_addr_r + 1;
+                                end
+                            end else if (load_counter_r == 1) begin
+                                we_w = 0;
+                            end else begin
+                                we_w = 1;
+                                if (sram_addr_r == BACK_START_ADDR - 1) begin
+                                    his_state_w = HIS_END;
+                                end else begin
+                                    load_counter_w = 0;
+                                    sram_addr_w = sram_addr_r + 1;
+                                end
+                            end
+                        end
+                        HIS_END: begin
+                            dip_state_w = DIP_CLOSING;
+                        end
+                    endcase
                 end
 
                 DIP_CLOSING: begin
@@ -612,6 +678,10 @@ always_ff@(posedge iCLK or negedge iRST_N) begin
         //en_value_r          <=  0;
         for (int i=0; i < 255; i=i+1)
             histo_r[i]      <=  0;
+        // histogram
+        his_state_r         <=  HIS_COUNT_HISTO;
+        his_max_value_r     <=  0;
+        his_max_idx_r       <=  0;
 
     end else begin
         // request
@@ -651,6 +721,10 @@ always_ff@(posedge iCLK or negedge iRST_N) begin
         en_state_r          <=  en_state_w;
         //en_value_r          <=  en_value_w;
         histo_r             <=  histo_w;
+        // histogram
+        his_state_r         <=  his_state_w;
+        his_max_value_r     <=  his_max_value_w;
+        his_max_idx_r       <=  his_max_idx_w;
     end
 end
 
