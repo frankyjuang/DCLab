@@ -263,7 +263,6 @@ parameter   EN_ENHANCE      = 2'b10;
 parameter   EN_END          = 2'b11;
 
 logic   [1:0]   en_state_r, en_state_w;
-//logic   [27:0]  en_value_r, en_value_w;
 logic   [18:0]  histo_r [255:0], histo_w [255:0];
 
 // Histogram Controller
@@ -276,6 +275,21 @@ parameter   HIS_END         = 2'b11;
 logic   [1:0]   his_state_r, his_state_w;
 logic   [18:0]  his_max_value_r, his_max_value_w;
 logic   [12:0]  his_max_idx_r, his_max_idx_w;
+
+// Closing Controller
+
+parameter   CL_CHECK        =   2'b00;
+parameter   CL_LOAD_BLOCK   =   2'b01;
+parameter   CL_WRITE        =   2'b10;
+parameter   CL_END          =   2'b11;
+
+parameter   DILATION        =   1'b0;
+parameter   EROSION         =   1'b1;
+parameter   CL_KERNEL_SIZE  =   3;
+
+logic   [1:0]   cl_state_r, cl_state_w;
+logic   [9:0]   cl_output_r, cl_output_w;
+logic           cl_mode_r, cl_mode_w;
 
 
 assign v_mask = 13'd0 ;//iZOOM_MODE_SW ? 13'd0 : 13'd26;
@@ -606,12 +620,74 @@ always_comb begin
                         end
                         HIS_END: begin
                             dip_state_w = DIP_CLOSING;
+                            cl_state_w = CL_CHECK;
+                            cl_mode_w = DILATE;
+                            h_counter_w = CL_KERNEL_SIZE/2;
+                            v_counter_w = CL_KERNEL_SIZE/2;
                         end
                     endcase
                 end
 
                 DIP_CLOSING: begin
-                    dip_state_w = DIP_END;
+                    case(cl_state_r)
+                        CL_CHECK: begin
+                            load_counter_w = 0;
+                            if (cl_mode_r == DILATE)
+                                sram_addr_w = FRONT_START_ADDR + (v_counter_r-CL_KERNEL_SIZE/2) * H_SYNC_ACT + h_counter_r - CL_KERNEL_SIZE/2;
+                            else
+                                sram_addr_w = BACK_START_ADDR + (v_counter_r-CL_KERNEL_SIZE/2) * H_SYNC_ACT + h_counter_r - CL_KERNEL_SIZE/2;
+                            cl_state_w = CL_LOAD_BLOCK;
+                        end
+                        CL_LOAD_BLOCK: begin
+                            load_counter_w = load_counter_r + 1;
+                            if (load_counter_r == 0) begin
+                                cl_output_w = ioSRAM_DQ[9:0];
+                                sram_addr_w = sram_addr_r + 1;
+                            end else begin
+                                if (    (cl_mode_r == DILATION && cl_output_r > ioSRAM_DQ[9:0]) ||
+                                        (cl_mode_r == EROSION &&  cl_output_r < ioSRAM_DQ[9:0])    ) begin
+                                    cl_output_w = ioSRAM_DQ[9:0];
+                                end 
+                                if (load_counter_r < CL_KERNEL_SIZE * CL_KERNEL_SIZE - 1) begin
+                                    if (cl_mode_r == DILATE)
+                                        sram_addr_w = FRONT_START_ADDR + (v_counter_r-CL_KERNEL_SIZE/2+(load_counter_w/CL_KERNEL_SIZE)) * H_SYNC_ACT + (h_counter_r-CL_KERNEL_SIZE/2+(load_counter_w%CL_KERNEL_SIZE));
+                                    else
+                                        sram_addr_w = BACK_START_ADDR + (v_counter_r-CL_KERNEL_SIZE/2+(load_counter_w/CL_KERNEL_SIZE)) * H_SYNC_ACT + (h_counter_r-CL_KERNEL_SIZE/2+(load_counter_w%CL_KERNEL_SIZE));
+                                end else begin
+                                    if (cl_mode_r == DILATE)
+                                        sram_addr_w = BACK_START_ADDR + v_counter_r * H_SYNC_ACT + h_counter_r;
+                                    else
+                                        sram_addr_w = FRONT_START_ADDR + v_counter_r * H_SYNC_ACT + h_counter_r;
+                                    cl_state_w = CL_WRITE;
+                                    load_counter_w = 0;
+                                    sram_write_buffer_w = cl_output_r;
+                                end
+                            end
+                        end
+                        CL_WRITE: begin
+                            if (load_counter_r < 1) begin
+                                we_w = 0;
+                                load_counter_w = load_counter_r + 1;
+                            end else begin
+                                we_w = 1;
+                                cl_state_w = CL_CHECK;
+                                if (h_counter_r < H_SYNC_ACT-CL_KERNEL_SIZE/2-1)
+                                    h_counter_w = h_counter_r + 1;
+                                else if (h_counter_r == H_SYNC_ACT-CL_KERNEL_SIZE/2-1 && v_counter_r < V_SYNC_ACT-CL_KERNEL_SIZE/2-1) begin
+                                    h_counter_w = 0;
+                                    v_counter_w = v_counter_r + 1;
+                                end else if (cl_mode_r == DILATION) begin
+                                    cl_mode_w = EROSION;
+                                    h_counter_w = CL_KERNEL_SIZE/2;
+                                    v_counter_w = CL_KERNEL_SIZE/2;
+                                end else
+                                    cl_state_w = CL_END;
+                            end
+                        end
+                        CL_END: begin
+                            dip_state_w = DIP_END;
+                        end
+                    endcase
                 end
 
                 DIP_END: begin
@@ -679,7 +755,6 @@ always_ff@(posedge iCLK or negedge iRST_N) begin
         fil_orig_val_r      <=  0;
         // contrast enhancement
         en_state_r          <=  EN_COUNT_HISTO;
-        //en_value_r          <=  0;
         for (int i=0; i < 255; i=i+1)
             histo_r[i]      <=  0;
         // histogram
@@ -723,7 +798,6 @@ always_ff@(posedge iCLK or negedge iRST_N) begin
         fil_orig_val_r      <=  fil_orig_val_w;
         // contrast enhancement
         en_state_r          <=  en_state_w;
-        //en_value_r          <=  en_value_w;
         histo_r             <=  histo_w;
         // histogram
         his_state_r         <=  his_state_w;
