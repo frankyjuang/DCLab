@@ -108,23 +108,23 @@ parameter	V_SYNC_TOTAL=	628;
 parameter	X_START		=	H_SYNC_CYC+H_SYNC_BACK;
 parameter	Y_START		=	V_SYNC_CYC+V_SYNC_BACK;
 
-// Define FSM states
-parameter   VIDEO_MODE          = 4'b0000;
-parameter   READ_BUFFER_MODE    = 4'b0001;
-parameter   DIP_MODE            = 4'b0010;
-parameter   WRITE_BUFFER_MODE   = 4'b0011;
 
-parameter   FINAL_START_ADDR    = 640 * 480;
+// Address
+parameter   FRONT_START_ADDR    = 0;
+parameter   BACK_START_ADDR     = 640 * 480;
+
 
 //	Host Side
 input		[9:0]	iRed;
 input		[9:0]	iGreen;
 input		[9:0]	iBlue;
 input               iDraw;
-
 output	reg			oRequest;
+
 logic   oRequest_r, oRequest_w;
+
 assign  oRequest    =   oRequest_r;
+
 //	VGA Side
 output	reg	[9:0]	oVGA_R;
 output	reg	[9:0]	oVGA_G;
@@ -142,7 +142,9 @@ logic				mVGA_V_SYNC_r, mVGA_V_SYNC_w;
 logic				mVGA_SYNC_r, mVGA_SYNC_w;
 logic				mVGA_BLANK_r, mVGA_BLANK_w;
 
-assign  oVGA_R          =   mVGA_R_r; assign  oVGA_G          =   mVGA_G_r; assign  oVGA_B          =   mVGA_B_r;
+assign  oVGA_R          =   mVGA_R_r;
+assign  oVGA_G          =   mVGA_G_r;
+assign  oVGA_B          =   mVGA_B_r;
 assign  oVGA_H_SYNC     =   mVGA_H_SYNC_r;
 assign  oVGA_V_SYNC     =   mVGA_V_SYNC_r;
 assign  oVGA_SYNC       =   mVGA_SYNC_r;
@@ -157,6 +159,17 @@ output  reg         oSRAM_OE_N;
 output  reg         oSRAM_UB_N;
 output  reg         oSRAM_WE_N;
 
+logic [19:0] sram_addr_r, sram_addr_w;                                  // sram address
+logic we_r, we_w                                                        // sram write flag
+logic [15:0] sram_write_buffer_r, sram_write_buffer_w;                  // buffer for writing to sram
+
+assign  oSRAM_CE_N  =   0;
+assign  oSRAM_OE_N  =   0;
+assign  oSRAM_WE_N  =   we_r;
+assign  oSRAM_UB_N  =   0;
+assign  oSRAM_LB_N  =   0;
+assign  oSRAM_ADDR  =   sram_addr_r;
+assign  ioSRAM_DQ   =   oSRAM_WE_N ? 'z : sram_write_buffer_r;
 //	Control Signal
 input				iCLK;
 input				iRST_N;
@@ -169,122 +182,123 @@ logic	[12:0]		V_Cont_r, V_Cont_w;
 logic	[12:0]		v_mask;
 
 ///////////////////////////////////
-//      Our Own Definitions      //
+//        Our Own Modules        //
 ///////////////////////////////////
 
-// buffers
-logic out_ce, out_oe, out_we, out_ub, out_lb;       // sram flags for output
-logic [19:0] out_sram_addr;                                  // sram address
-wire [15:0] out_sram_dq;
+// Define FSM states
+parameter   VIDEO_MODE          = 3'b000;
+parameter   READ_BUFFER_MODE    = 3'b001;
+parameter   DIP_MODE            = 3'b010;
+parameter   WRITE_BUFFER_MODE   = 3'b011;
 
-// sram
-logic [19:0] sram_addr_r, sram_addr_w;                                  // sram address
-logic ce_r, ce_w, oe_r, oe_w, we_r, we_w, ub_r, ub_w, lb_r, lb_w;       // sram flags
-logic [15:0] sram_write_buffer_r, sram_write_buffer_w;                  // buffer for writing to sram
-logic [15:0] sram_read_buffer_r, sram_read_buffer_w;                    // buffer for reading from sram
+logic   [2:0]   state_r, state_w; // states
 
-// filter controller
-logic [19:0] fc_sram_addr;
-logic [15:0] fc_sram_dq_r, fc_sram_dq_w;
-logic fc_ce, fc_oe, fc_we, fc_ub, fc_lb;
-logic fc_start_r, fc_start_w;
-logic fc_done;
+// Define DIP states
+parameter   DIP_FILTER  =   3'b000;
+parameter   DIP_ENHANCE =   3'b001;
+parameter   DIP_HISTO   =   3'b010;
+parameter   DIP_CLOSING =   3'b011;
+parameter   DIP_END     =   3'b100;
 
-Filter_Controller filter_controller (
-    .iStart(fc_start_r),
-    .iRst(iRST_N),
-    .iClk(iCLK),
-    .iSram_dq(fc_sram_dq_r),
-    .oSram_dq(fc_sram_dq_w),
-    .oSram_addr(fc_sram_addr),
-    .oSram_ce_n(fc_ce),
-    .oSram_we_n(fc_we),
-    .oSram_oe_n(fc_oe),
-    .oSram_ub_n(fc_ub),
-    .oSram_lb_n(fc_lb),
-    .oDone(fc_done)
-);
+logic   [2:0]   dip_state_r, dip_state_w;
 
-// other
-logic [3:0] state_r, state_w; // states
-logic [19:0] rw_counter_r, rw_counter_w;                                // counter for reading and writing
-logic start_dip_r, start_dip_w;  //indicates whether screenshot is done and should start processing
-//logic dip_done_r, dip_done_w;                                           // indicates whether DIP is done
+// Control Signals
+logic start_read_sdram_r, start_read_sdram_w;  //indicates whether screenshot is done and should start processing
+
+// Counters
+logic   [9:0]   h_counter_r, h_counter_w; // horizontal counter
+logic   [8:0]   v_counter_r, v_counter_w; // vertical counter
+logic   [9:0]   load_counter_r, load_counter_w; // counter for loading data
+
+// Gaussian Filter Controller
+
+// filter controller states
+parameter FIL_CHECK         = 3'b000;
+parameter FIL_LOAD_BLOCK    = 3'b001;
+parameter FIL_WRITE         = 3'b010;
+parameter FIL_MERGE         = 3'b011;
+parameter FIL_END           = 3'b100;
+
+// filter parameters
+parameter FIL_KERNEL_SIZE   = 625;
+parameter bit [32:0] FIL_COEFFS [624:0] = '{
+92,126,169,221,279,343,412,480,543,598,641,668,678,668,641,598,543,480,412,343,279,221,169,126,92,
+126,174,233,304,384,472,566,659,747,823,882,920,933,920,882,823,747,659,566,472,384,304,233,174,126,
+169,233,312,405,513,633,758,882,1000,1102,1180,1231,1247,1231,1180,1102,1000,882,758,633,513,405,312,233,169,
+221,304,405,528,668,823,986,1148,1301,1433,1536,1602,1624,1602,1536,1433,1301,1148,986,823,668,528,405,304,221,
+279,384,513,668,847,1042,1247,1453,1646,1814,1945,2026,2055,2026,1945,1814,1646,1453,1247,1042,847,668,513,384,279,
+343,472,633,823,1042,1283,1536,1789,2026,2233,2393,2495,2530,2495,2393,2233,2026,1789,1536,1283,1042,823,633,472,343,
+412,566,758,986,1247,1536,1840,2142,2427,2674,2866,2988,3029,2988,2866,2674,2427,2142,1840,1536,1247,986,758,566,412,
+480,659,882,1148,1453,1789,2142,2495,2826,3115,3338,3480,3528,3480,3338,3115,2826,2495,2142,1789,1453,1148,882,659,480,
+543,747,1000,1301,1646,2026,2427,2826,3202,3528,3782,3942,3997,3942,3782,3528,3202,2826,2427,2026,1646,1301,1000,747,543,
+598,823,1102,1433,1814,2233,2674,3115,3528,3888,4167,4344,4404,4344,4167,3888,3528,3115,2674,2233,1814,1433,1102,823,598,
+641,882,1180,1536,1945,2393,2866,3338,3782,4167,4465,4655,4720,4655,4465,4167,3782,3338,2866,2393,1945,1536,1180,882,641,
+668,920,1231,1602,2026,2495,2988,3480,3942,4344,4655,4852,4920,4852,4655,4344,3942,3480,2988,2495,2026,1602,1231,920,668,
+678,933,1247,1624,2055,2530,3029,3528,3997,4404,4720,4920,4989,4920,4720,4404,3997,3528,3029,2530,2055,1624,1247,933,678,
+668,920,1231,1602,2026,2495,2988,3480,3942,4344,4655,4852,4920,4852,4655,4344,3942,3480,2988,2495,2026,1602,1231,920,668,
+641,882,1180,1536,1945,2393,2866,3338,3782,4167,4465,4655,4720,4655,4465,4167,3782,3338,2866,2393,1945,1536,1180,882,641,
+598,823,1102,1433,1814,2233,2674,3115,3528,3888,4167,4344,4404,4344,4167,3888,3528,3115,2674,2233,1814,1433,1102,823,598,
+543,747,1000,1301,1646,2026,2427,2826,3202,3528,3782,3942,3997,3942,3782,3528,3202,2826,2427,2026,1646,1301,1000,747,543,
+480,659,882,1148,1453,1789,2142,2495,2826,3115,3338,3480,3528,3480,3338,3115,2826,2495,2142,1789,1453,1148,882,659,480,
+412,566,758,986,1247,1536,1840,2142,2427,2674,2866,2988,3029,2988,2866,2674,2427,2142,1840,1536,1247,986,758,566,412,
+343,472,633,823,1042,1283,1536,1789,2026,2233,2393,2495,2530,2495,2393,2233,2026,1789,1536,1283,1042,823,633,472,343,
+279,384,513,668,847,1042,1247,1453,1646,1814,1945,2026,2055,2026,1945,1814,1646,1453,1247,1042,847,668,513,384,279,
+221,304,405,528,668,823,986,1148,1301,1433,1536,1602,1624,1602,1536,1433,1301,1148,986,823,668,528,405,304,221,
+169,233,312,405,513,633,758,882,1000,1102,1180,1231,1247,1231,1180,1102,1000,882,758,633,513,405,312,233,169,
+126,174,233,304,384,472,566,659,747,823,882,920,933,920,882,823,747,659,566,472,384,304,233,174,126,
+92,126,169,221,279,343,412,480,543,598,641,668,678,668,641,598,543,480,412,343,279,221,169,126,92
+};
+
+logic   [2:0]   fil_state_r, fil_state_w;
+logic   [39:0]  fil_sum_r, fil_sum_w;
+logic           fil_orig_val_r, fil_orig_val_w;
+
 
 
 assign v_mask = 13'd0 ;//iZOOM_MODE_SW ? 13'd0 : 13'd26;
 ////////////////////////////////////
-assign  oSRAM_CE_N  =   out_ce;
-assign  oSRAM_OE_N  =   out_oe;
-assign  oSRAM_WE_N  =   out_we;
-assign  oSRAM_UB_N  =   out_ub;
-assign  oSRAM_LB_N  =   out_lb;
-assign  oSRAM_ADDR  =   out_sram_addr;
-assign  ioSRAM_DQ   =   out_sram_dq;
 
 ////////////////////////////////////////////////////////
 
-
-always_ff @(posedge iCLK or negedge iRST_N) begin
-    if (!iRST_N)
-        fc_sram_dq_r <= 0;
-    else if (fc_we)
-        fc_sram_dq_r <= out_sram_dq;
-    else 
-        fc_sram_dq_r <= fc_sram_dq_w;
-end
-
 always_comb begin
-    //////////////////////////////////
-    //    Multiplex SRAM Signals    //
-    //////////////////////////////////
-    if (state_r != DIP_MODE) begin
-        out_ce = ce_r;
-        out_oe = oe_r;
-        out_we = we_r;
-        out_ub = ub_r;
-        out_lb = lb_r;
-        out_sram_addr = sram_addr_r;
-        out_sram_dq = (out_we) ? 'z : sram_write_buffer_r;
-    end else begin
-        out_ce = fc_ce;
-        out_oe = fc_oe;
-        out_we = fc_we;
-        out_ub = fc_ub;
-        out_lb = fc_lb;
-        out_sram_addr = fc_sram_addr;
-        out_sram_dq = (out_we) ? 'z : fc_sram_dq_r;
-    end
     //////////////////////////////////
     //       Init signals           //
     //////////////////////////////////
     // request
-    oRequest_w          =  oRequest_r;
+    oRequest_w          =   oRequest_r;
     // H & V control
-    H_Cont_w            =  H_Cont_r;
-    V_Cont_w            =  V_Cont_r;
+    H_Cont_w            =   H_Cont_r;
+    V_Cont_w            =   V_Cont_r;
     // VGA
-    mVGA_R_w            =  mVGA_R_r;
-    mVGA_G_w            =  mVGA_R_r;
-    mVGA_B_w            =  mVGA_R_r;
-    mVGA_BLANK_w        =  mVGA_BLANK_r;
-    mVGA_SYNC_w         =  mVGA_SYNC_r;
-    mVGA_H_SYNC_w       =  mVGA_H_SYNC_r;
-    mVGA_V_SYNC_w       =  mVGA_V_SYNC_r;
+    mVGA_R_w            =   mVGA_R_r;
+    mVGA_G_w            =   mVGA_R_r;
+    mVGA_B_w            =   mVGA_R_r;
+    mVGA_BLANK_w        =   mVGA_BLANK_r;
+    mVGA_SYNC_w         =   mVGA_SYNC_r;
+    mVGA_H_SYNC_w       =   mVGA_H_SYNC_r;
+    mVGA_V_SYNC_w       =   mVGA_V_SYNC_r;
     // SRAM
-    sram_addr_w         =  sram_addr_r;
-    ce_w                =  ce_r;
-    oe_w                =  oe_r;
-    we_w                =  we_r;
-    ub_w                =  ub_r;
-    lb_w                =  lb_r;
-    sram_write_buffer_w =  sram_write_buffer_r;
-    sram_read_buffer_w  =  sram_read_buffer_r;
-    // other
-    state_w             =  state_r;
-    rw_counter_w        =  rw_counter_r;
-    start_dip_w         =  start_dip_r;
-    fc_start_w          =  fc_start_r;
+    sram_addr_w         =   sram_addr_r;
+    we_w                =   we_r;
+    sram_write_buffer_w =   sram_write_buffer_r;
+    // states
+    state_w             =   state_r;
+    dip_state_w         =   dip_state_r;
+    // control signals
+    start_read_sdram_w  =   start_read_sdram_r;
+    // counters
+    h_counter_w         =   h_counter_r;
+    v_counter_w         =   v_counter_r;
+    load_counter_w      =   load_counter_r;
+
+    ////////////////////////////////////
+    //           Modules              //
+    ////////////////////////////////////
+
+    // Gaussian Filter Controller
+    fil_state_w     = fil_state_r;
+    fil_sum_w       = fil_sum_r;
+    fil_orig_val_w  = fil_orig_val_r;
 
     // check whether to start DIP
     if( iDraw )
@@ -324,71 +338,157 @@ always_comb begin
     //      State Operations        //
     //////////////////////////////////
     case(state_r)
-        VIDEO_MODE:
-            begin
-                // assign VGA outputs
-                mVGA_BLANK_w	=	mVGA_H_SYNC_r & mVGA_V_SYNC_r;   
-                mVGA_SYNC_w	    =	1'b0;
+        VIDEO_MODE: begin
+            // assign VGA outputs
+            mVGA_BLANK_w	=	mVGA_H_SYNC_r & mVGA_V_SYNC_r;
+            mVGA_SYNC_w	    =	1'b0;
 
-                mVGA_R_w	    =	(	H_Cont_r>=X_START 	&& H_Cont_r<X_START+H_SYNC_ACT &&
-						V_Cont_r>=Y_START+v_mask 	&& V_Cont_r<Y_START+V_SYNC_ACT )
-						?	iRed	:	0;
-                mVGA_G_w	    =	(	H_Cont_r>=X_START 	&& H_Cont_r<X_START+H_SYNC_ACT &&
-						V_Cont_r>=Y_START+v_mask 	&& V_Cont_r<Y_START+V_SYNC_ACT )
-						?	iGreen	:	0;
-                mVGA_B_w	    =	(	H_Cont_r>=X_START 	&& H_Cont_r<X_START+H_SYNC_ACT &&
-						V_Cont_r>=Y_START+v_mask 	&& V_Cont_r<Y_START+V_SYNC_ACT )
-						?	iBlue	:	0;
+            mVGA_R_w	    =	(	H_Cont_r>=X_START 	&& H_Cont_r<X_START+H_SYNC_ACT &&
+                    V_Cont_r>=Y_START+v_mask 	&& V_Cont_r<Y_START+V_SYNC_ACT )
+                    ?	iRed	:	0;
+            mVGA_G_w	    =	(	H_Cont_r>=X_START 	&& H_Cont_r<X_START+H_SYNC_ACT &&
+                    V_Cont_r>=Y_START+v_mask 	&& V_Cont_r<Y_START+V_SYNC_ACT )
+                    ?	iGreen	:	0;
+            mVGA_B_w	    =	(	H_Cont_r>=X_START 	&& H_Cont_r<X_START+H_SYNC_ACT &&
+                    V_Cont_r>=Y_START+v_mask 	&& V_Cont_r<Y_START+V_SYNC_ACT )
+                    ?	iBlue	:	0;
 
-                // Pixel LUT Address Generator
-                if( H_Cont_r>=X_START-2 && H_Cont_r<X_START+H_SYNC_ACT-2 &&
-                    V_Cont_r>=Y_START && V_Cont_r<Y_START+V_SYNC_ACT )
-		            oRequest_w = 1;
-		        else
-		            oRequest_w = 0;
+            // Pixel LUT Address Generator
+            if( H_Cont_r>=X_START-2 && H_Cont_r<X_START+H_SYNC_ACT-2 &&
+                V_Cont_r>=Y_START && V_Cont_r<Y_START+V_SYNC_ACT )
+                oRequest_w = 1;
+            else
+                oRequest_w = 0;
 
-                // Switch to Read buffer state
-                if(start_dip_r && H_Cont_r == 0 && V_Cont_r == 0) begin
-                    state_w = READ_BUFFER_MODE;
-                end
+            // Switch to Read buffer state
+            if(start_read_sdram_r && H_Cont_r == 0 && V_Cont_r == 0) begin
+                state_w = READ_BUFFER_MODE;
             end
-        READ_BUFFER_MODE:
-            begin
-                // Pixel LUT Address Generator
-                if( H_Cont_r>=X_START-2 && H_Cont_r<X_START+H_SYNC_ACT-2 &&
-                    V_Cont_r>=Y_START && V_Cont_r<Y_START+V_SYNC_ACT ) begin
-		            oRequest_w = 1;
-                end else begin
-		            oRequest_w = 0;
-                end
+        end
 
-                // prepare data and address for writing to sram
-                if(	H_Cont_r>=X_START 	&& H_Cont_r<X_START+H_SYNC_ACT &&
-                    V_Cont_r>=Y_START+v_mask 	&& V_Cont_r<Y_START+V_SYNC_ACT ) begin
-                    sram_write_buffer_w = (299 * iRed[9:2] + 587 * iGreen[9:2] + 114 * iBlue[9:2]) / 1000;
-                    sram_addr_w = (H_Cont_r - X_START) + (V_Cont_r - Y_START) * H_SYNC_ACT;
-                end
-
-                // write to sram
-                if( H_Cont_r>=X_START+1 && H_Cont_r<X_START+H_SYNC_ACT+1 &&
-                    V_Cont_r>=Y_START+v_mask    && V_Cont_r<Y_START+V_SYNC_ACT )
-                    we_w = 0;
-                else
-                    we_w = 1;
-
-                // transition to DIP state
-                if( H_Cont_r>=X_START+H_SYNC_ACT+1 && V_Cont_r>=Y_START+V_SYNC_ACT ) begin
-                    state_w = DIP_MODE;
-                    fc_start_w = 1;
-                end
+        READ_BUFFER_MODE: begin
+            // Pixel LUT Address Generator
+            if( H_Cont_r>=X_START-2 && H_Cont_r<X_START+H_SYNC_ACT-2 &&
+                V_Cont_r>=Y_START && V_Cont_r<Y_START+V_SYNC_ACT ) begin
+                oRequest_w = 1;
+            end else begin
+                oRequest_w = 0;
             end
-        DIP_MODE:
-            begin
-                if (fc_start_r)
-                    fc_start_w = 0;
-                if (fc_done)
+
+            // prepare data and address for writing to sram
+            if(	H_Cont_r>=X_START 	&& H_Cont_r<X_START+H_SYNC_ACT &&
+                V_Cont_r>=Y_START+v_mask 	&& V_Cont_r<Y_START+V_SYNC_ACT ) begin
+                sram_write_buffer_w = (299 * iRed[9:2] + 587 * iGreen[9:2] + 114 * iBlue[9:2]) / 1000;
+                sram_addr_w = (H_Cont_r - X_START) + (V_Cont_r - Y_START) * H_SYNC_ACT;
+            end
+
+            // write to sram
+            if( H_Cont_r>=X_START+1 && H_Cont_r<X_START+H_SYNC_ACT+1 &&
+                V_Cont_r>=Y_START+v_mask    && V_Cont_r<Y_START+V_SYNC_ACT )
+                we_w = 0;
+            else
+                we_w = 1;
+
+            // transition to DIP state
+            if( H_Cont_r>=X_START+H_SYNC_ACT+1 && V_Cont_r>=Y_START+V_SYNC_ACT ) begin
+                state_w = DIP_MODE;
+                fil_start_w = 1;
+                h_counter_w = 0;
+                v_counter_w = 0;
+            end
+        end
+
+        DIP_MODE: begin
+            case(dip_state_r)
+                DIP_FILTER: begin
+                    case(fil_state_r)
+                        FIL_CHECK: begin
+                            load_counter_w = 0;
+                            if (h_counter_r < 12 || h_counter_r > H_SYNC_ACT-13 ||
+                                v_counter_r < 12 || v_counter_r > V_SYNC_ACT-13) begin
+                                sram_write_buffer_w = 128;
+                                sram_addr_w = BACK_START_ADDR + v_counter_r * H_SYNC_ACT + h_counter_r;
+                                fil_state_w = FIL_WRITE;
+                            end else begin
+                                sram_addr_w = FRONT_START_ADDR + (v_counter_r-12) * WIDTH + h_counter_r - 12;
+                                fil_state_w = FIL_LOAD_BLOCK;
+                                fil_sum_w = 0;
+                            end
+                        end
+                        FIL_LOAD_BLOCK: begin
+                            if (load_counter_r < 624) begin
+                                load_counter_w = load_counter_r + 1;
+                                sram_addr_w = (v_counter_r-12+(load_counter_w/25)) * H_SYNC_ACT + (h_counter_r-12+(load_counter_w%25));
+                                fil_sum_w = fil_sum_r + FIL_COEFFS[load_counter_r] * ioSRAM_DQ[9:0];
+                            end else begin
+                                state_w = WRITE;
+                                sram_write_buffer_w = ((fil_sum_r + FIL_COEFFS[load_counter_r] * ioSRAM_DQ[9:0]) >> 20);
+                                load_counter_w = 0;
+                                sram_addr_w = BACK_START_ADDR + v_counter_r * H_SYNC_ACT + h_counter_r;
+                            end
+                        end
+                        FIL_WRITE: begin
+                            if (load_counter_r < 1) begin
+                                we_w = 0;
+                                load_counter_w = load_counter_r + 1;
+                            end else begin
+                                we_w = 1;
+                                fil_state_w = FIL_CHECK;
+                                if (h_counter_r < H_SYNC_ACT-1)
+                                    h_counter_w = h_counter_r + 1;
+                                else if (h_counter_r == H_SYNC_ACT-1 && v_counter_r < V_SYNC_ACT-1) begin
+                                    h_counter_w = 0;
+                                    v_counter_w = v_counter_r + 1;
+                                end else begin
+                                    fil_state_w = FIL_MERGE;
+                                    sram_addr_w = FRONT_START_ADDR;
+                                    load_counter_w = 0;
+                                end
+                            end
+                        end
+                        FIL_MERGE: begin
+                            load_counter_w = load_counter_r + 1;
+                            if (load_counter_r < 1) begin
+                                fil_orig_val_w = ioSRAM_DQ[9:0];
+                                sram_addr_w = BACK_START_ADDR + sram_addr_r;
+                            end else if (load_counter_r < 2) begin
+                                sram_write_buffer_w = fil_orig_val_r/2 + (255 - ioSRAM_DQ[9:0])/2;
+                                sram_addr_w = sram_addr_r - BACK_START_ADDR;
+                            end else if (load_counter_r < 3) begin
+                                we_w = 0;
+                            end else begin
+                                we_w = 1;
+                                if (addr_r >= BACK_START_ADDR - 1) begin
+                                    fil_state_w = FIL_END;
+                                end else begin
+                                    load_counter_w = 0;
+                                    sram_addr_w = sram_addr_r + 1;
+                                end
+                            end
+                        end
+                        FIL_END: begin
+                            dip_state_w = DIP_ENHANCE;
+                        end
+                    endcase
+                end
+
+                DIP_ENHANCE: begin
+                    dip_state_w = DIP_HISTO;
+                end
+
+                DIP_HISTO: begin
+                    dip_state_w = DIP_CLOSING;
+                end
+
+                DIP_CLOSING: begin
+                    dip_state_w = DIP_END;
+                end
+
+                DIP_END: begin
                     state_w = WRITE_BUFFER_MODE;
-            end
+                end
+            endcase
+        end
         WRITE_BUFFER_MODE:
             begin
                 // set sram read address
@@ -416,9 +516,6 @@ always_ff@(posedge iCLK or negedge iRST_N) begin
     if (!iRST_N) begin
         // request
         oRequest_r          <=  0;
-        // H & V control
-        H_Cont_r            <=  0;
-        V_Cont_r            <=  0;
         // VGA
         mVGA_R_r            <=  0;
         mVGA_G_r            <=  0;
@@ -429,26 +526,31 @@ always_ff@(posedge iCLK or negedge iRST_N) begin
         mVGA_V_SYNC_r       <=  0;
         // SRAM
         sram_addr_r         <=  0;
-        ce_r                <=  0;
-        oe_r                <=  0;
         we_r                <=  1;
-        ub_r                <=  0;
-        lb_r                <=  0;
         sram_write_buffer_r <=  0;
-        sram_read_buffer_r  <=  0;
-        // other
-        state_r             <=  0;
-        rw_counter_r        <=  0;
-        start_dip_r         <=  0;
-        // modules
-        fc_start_r          <=  0;
+        // H & V control
+        H_Cont_r            <=  0;
+        V_Cont_r            <=  0;
+        // states
+        state_r             <=  VIDEO_MODE;
+        dip_state_r         <=  DIP_FILTER;
+        // counters
+        h_counter_r         <=  0;
+        v_counter_r         <=  0;
+        load_counter_r      <=  0;
+        // control signals
+        start_read_sdram_r  <=  0;
+        /////////////
+        // modules //
+        /////////////
+        // filter
+        fil_state_r         <=  FIL_CHECK;
+        fil_sum_r           <=  0;
+        fil_orig_val_r      <=  0;
 
     end else begin
         // request
         oRequest_r          <=  oRequest_w;
-        // H & V control
-        H_Cont_r            <=  H_Cont_w;
-        V_Cont_r            <=  V_Cont_w;
         // VGA
         mVGA_R_r            <=  mVGA_R_w;
         mVGA_G_r            <=  mVGA_G_w;
@@ -459,19 +561,27 @@ always_ff@(posedge iCLK or negedge iRST_N) begin
         mVGA_V_SYNC_r       <=  mVGA_V_SYNC_w;
         // SRAM
         sram_addr_r         <=  sram_addr_w;
-        ce_r                <=  ce_w;
-        oe_r                <=  oe_w;
         we_r                <=  we_w;
-        ub_r                <=  ub_w;
-        lb_r                <=  lb_w;
         sram_write_buffer_r <=  sram_write_buffer_w;
-        sram_read_buffer_r  <=  sram_read_buffer_w;
-        // other
+        // H & V control
+        H_Cont_r            <=  H_Cont_w;
+        V_Cont_r            <=  V_Cont_w;
+        // states
         state_r             <=  state_w;
-        rw_counter_r        <=  rw_counter_w;
-        start_dip_r         <=  start_dip_w;
-        // modules
-        fc_start_r          <=  fc_start_w;
+        dip_state_r         <=  dip_state_w;
+        // counters
+        h_counter_r         <=  h_counter_w;
+        v_counter_r         <=  v_counter_w;
+        load_counter_r      <=  load_counter_w;
+        // control signals
+        start_read_sdram_r  <=  start_read_sdram_w;
+        /////////////
+        // modules //
+        /////////////
+        // filter
+        fil_state_r         <=  fil_state_w;
+        fil_sum_r           <=  fil_sum_w;
+        fil_orig_val_r      <=  fil_orig_val_w;
     end
 end
 
