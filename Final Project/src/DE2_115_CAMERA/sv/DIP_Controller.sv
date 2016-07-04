@@ -198,7 +198,8 @@ parameter   DIP_FILTER  =   3'b000;
 parameter   DIP_ENHANCE =   3'b001;
 parameter   DIP_HISTO   =   3'b010;
 parameter   DIP_CLOSING =   3'b011;
-parameter   DIP_END     =   3'b100;
+parameter   DIP_NF      =   3'b100;
+parameter   DIP_END     =   3'b101;
 
 logic   [2:0]   dip_state_r, dip_state_w;
 
@@ -291,6 +292,14 @@ logic   [1:0]   cl_state_r, cl_state_w;
 logic   [9:0]   cl_output_r, cl_output_w;
 logic           cl_mode_r, cl_mode_w;
 
+// Novel Filter
+parameter   NF_CHECK        =   2'b00;
+parameter   NF_LOAD_BLOCK   =   2'b01;
+parameter   NF_WRITE        =   2'b10;
+parameter   NF_END          =   2'b11;
+
+logic   [1:0]   nf_state_r, nf_state_w;
+
 
 assign v_mask = 13'd0 ;//iZOOM_MODE_SW ? 13'd0 : 13'd26;
 ////////////////////////////////////
@@ -345,6 +354,14 @@ always_comb begin
     his_state_w     = his_state_r;
     his_max_value_w = his_max_value_r;
     his_max_idx_w   = his_max_idx_r;
+
+    // Closing Controller
+    cl_state_w      = cl_state_r;
+    cl_output_w     = cl_output_r;
+    cl_mode_w       = cl_mode_r;
+
+    // novel filter
+    nf_state_w      = nf_state_r;
 
     // check whether to start DIP
     if( iDraw )
@@ -621,7 +638,7 @@ always_comb begin
                         HIS_END: begin
                             dip_state_w = DIP_CLOSING;
                             cl_state_w = CL_CHECK;
-                            cl_mode_w = DILATE;
+                            cl_mode_w = DILATION;
                             h_counter_w = CL_KERNEL_SIZE/2;
                             v_counter_w = CL_KERNEL_SIZE/2;
                         end
@@ -632,7 +649,7 @@ always_comb begin
                     case(cl_state_r)
                         CL_CHECK: begin
                             load_counter_w = 0;
-                            if (cl_mode_r == DILATE)
+                            if (cl_mode_r == DILATION)
                                 sram_addr_w = FRONT_START_ADDR + (v_counter_r-CL_KERNEL_SIZE/2) * H_SYNC_ACT + h_counter_r - CL_KERNEL_SIZE/2;
                             else
                                 sram_addr_w = BACK_START_ADDR + (v_counter_r-CL_KERNEL_SIZE/2) * H_SYNC_ACT + h_counter_r - CL_KERNEL_SIZE/2;
@@ -640,29 +657,54 @@ always_comb begin
                         end
                         CL_LOAD_BLOCK: begin
                             load_counter_w = load_counter_r + 1;
-                            if (load_counter_r == 0) begin
+                            if (load_counter_r == 1) begin
                                 cl_output_w = ioSRAM_DQ[9:0];
                                 sram_addr_w = sram_addr_r + 1;
+                            end else if (load_counter_r == 0 || load_counter_r == 2 || load_counter_r == 6) begin
+                                if (cl_mode_r == DILATION)
+                                    sram_addr_w = FRONT_START_ADDR + (v_counter_r-CL_KERNEL_SIZE/2+(load_counter_w/CL_KERNEL_SIZE)) * H_SYNC_ACT + (h_counter_r-CL_KERNEL_SIZE/2+(load_counter_w%CL_KERNEL_SIZE));
+                                else
+                                    sram_addr_w = BACK_START_ADDR + (v_counter_r-CL_KERNEL_SIZE/2+(load_counter_w/CL_KERNEL_SIZE)) * H_SYNC_ACT + (h_counter_r-CL_KERNEL_SIZE/2+(load_counter_w%CL_KERNEL_SIZE));
+                            end else if (load_counter_r == 8) begin
+                                if (cl_mode_r == DILATION)
+                                    sram_addr_w = BACK_START_ADDR + v_counter_r * H_SYNC_ACT + h_counter_r;
+                                else
+                                    sram_addr_w = FRONT_START_ADDR + v_counter_r * H_SYNC_ACT + h_counter_r;
+                                cl_state_w = CL_WRITE;
+                                load_counter_w = 0;
+                                sram_write_buffer_w = cl_output_r;
                             end else begin
                                 if (    (cl_mode_r == DILATION && cl_output_r > ioSRAM_DQ[9:0]) ||
                                         (cl_mode_r == EROSION &&  cl_output_r < ioSRAM_DQ[9:0])    ) begin
                                     cl_output_w = ioSRAM_DQ[9:0];
                                 end 
                                 if (load_counter_r < CL_KERNEL_SIZE * CL_KERNEL_SIZE - 1) begin
-                                    if (cl_mode_r == DILATE)
+                                    if (cl_mode_r == DILATION)
                                         sram_addr_w = FRONT_START_ADDR + (v_counter_r-CL_KERNEL_SIZE/2+(load_counter_w/CL_KERNEL_SIZE)) * H_SYNC_ACT + (h_counter_r-CL_KERNEL_SIZE/2+(load_counter_w%CL_KERNEL_SIZE));
                                     else
                                         sram_addr_w = BACK_START_ADDR + (v_counter_r-CL_KERNEL_SIZE/2+(load_counter_w/CL_KERNEL_SIZE)) * H_SYNC_ACT + (h_counter_r-CL_KERNEL_SIZE/2+(load_counter_w%CL_KERNEL_SIZE));
-                                end else begin
-                                    if (cl_mode_r == DILATE)
-                                        sram_addr_w = BACK_START_ADDR + v_counter_r * H_SYNC_ACT + h_counter_r;
-                                    else
-                                        sram_addr_w = FRONT_START_ADDR + v_counter_r * H_SYNC_ACT + h_counter_r;
-                                    cl_state_w = CL_WRITE;
-                                    load_counter_w = 0;
-                                    sram_write_buffer_w = cl_output_r;
                                 end
                             end
+                            //end else begin
+                                //if (    (cl_mode_r == DILATION && cl_output_r > ioSRAM_DQ[9:0]) ||
+                                        //(cl_mode_r == EROSION &&  cl_output_r < ioSRAM_DQ[9:0])    ) begin
+                                    //cl_output_w = ioSRAM_DQ[9:0];
+                                //end 
+                                //if (load_counter_r < CL_KERNEL_SIZE * CL_KERNEL_SIZE - 1) begin
+                                    //if (cl_mode_r == DILATION)
+                                        //sram_addr_w = FRONT_START_ADDR + (v_counter_r-CL_KERNEL_SIZE/2+(load_counter_w/CL_KERNEL_SIZE)) * H_SYNC_ACT + (h_counter_r-CL_KERNEL_SIZE/2+(load_counter_w%CL_KERNEL_SIZE));
+                                    //else
+                                        //sram_addr_w = BACK_START_ADDR + (v_counter_r-CL_KERNEL_SIZE/2+(load_counter_w/CL_KERNEL_SIZE)) * H_SYNC_ACT + (h_counter_r-CL_KERNEL_SIZE/2+(load_counter_w%CL_KERNEL_SIZE));
+                                //end else begin
+                                    //if (cl_mode_r == DILATION)
+                                        //sram_addr_w = BACK_START_ADDR + v_counter_r * H_SYNC_ACT + h_counter_r;
+                                    //else
+                                        //sram_addr_w = FRONT_START_ADDR + v_counter_r * H_SYNC_ACT + h_counter_r;
+                                    //cl_state_w = CL_WRITE;
+                                    //load_counter_w = 0;
+                                    //sram_write_buffer_w = cl_output_r;
+                                //end
+                            //end
                         end
                         CL_WRITE: begin
                             if (load_counter_r < 1) begin
@@ -685,6 +727,92 @@ always_comb begin
                             end
                         end
                         CL_END: begin
+                            dip_state_w = DIP_NF;
+                            nf_state_w = NF_CHECK;
+                            h_counter_w = 1;
+                            v_counter_w = 1;
+                            load_counter_w = 0;
+                        end
+                    endcase
+                end
+
+                DIP_NF: begin
+                    case(nf_state_r)
+                        NF_CHECK: begin
+                            if (load_counter_r == 0) begin
+                                sram_addr_w = FRONT_START_ADDR + v_counter_r * H_SYNC_ACT + h_counter_r;
+                                load_counter_w = load_counter_r + 1;
+                            end else begin
+                                load_counter_w = 0;
+                                if (ioSRAM_DQ[9:0] == 255) begin
+                                    if (h_counter_r < H_SYNC_ACT-2)
+                                        h_counter_w = h_counter_r + 1;
+                                    else if (h_counter_r == H_SYNC_ACT-2 && v_counter_r < V_SYNC_ACT-2) begin
+                                        h_counter_w = 0;
+                                        v_counter_w = v_counter_r + 1;
+                                    end else
+                                        nf_state_w = NF_END;
+                                end else begin
+                                    sram_addr_w = FRONT_START_ADDR + (v_counter_r-1) * H_SYNC_ACT + h_counter_r - 1;
+                                    nf_state_w = NF_LOAD_BLOCK;
+                                end
+                            end
+                        end
+                        NF_LOAD_BLOCK: begin
+                            load_counter_w = load_counter_r + 1;
+                            if (load_counter_r == 1 || load_counter_r == 3 || load_counter_r == 5) begin
+                                if (ioSRAM_DQ[9:0] != 255) begin
+                                    nf_state_w = NF_CHECK;
+                                    load_counter_w = 0;
+                                    if (h_counter_r < H_SYNC_ACT-2)
+                                        h_counter_w = h_counter_r + 1;
+                                    else if (h_counter_r == H_SYNC_ACT-2 && v_counter_r < V_SYNC_ACT-2) begin
+                                        h_counter_w = 0;
+                                        v_counter_w = v_counter_r + 1;
+                                    end else
+                                        nf_state_w = NF_END;
+                                end else begin
+                                    sram_addr_w = FRONT_START_ADDR + (v_counter_r-1+(load_counter_w/3)) * H_SYNC_ACT + (h_counter_r-1+(load_counter_w%3));
+                                end
+                            end else if (load_counter_r == 7) begin
+                                if (ioSRAM_DQ[9:0] == 255) begin
+                                    sram_addr_w = BACK_START_ADDR + v_counter_r * H_SYNC_ACT + h_counter_r;
+                                    load_counter_w = 0;
+                                    nf_state_w = NF_WRITE;
+                                    sram_write_buffer_w = 255;
+                                end else begin
+                                    nf_state_w = NF_CHECK;
+                                    load_counter_w = 0;
+                                    if (h_counter_r < H_SYNC_ACT-2)
+                                        h_counter_w = h_counter_r + 1;
+                                    else if (h_counter_r == H_SYNC_ACT-2 && v_counter_r < V_SYNC_ACT-2) begin
+                                        h_counter_w = 0;
+                                        v_counter_w = v_counter_r + 1;
+                                    end else
+                                        nf_state_w = NF_END;
+                                end
+                            end else begin
+                                sram_addr_w = FRONT_START_ADDR + (v_counter_r-1+(load_counter_w/3)) * H_SYNC_ACT + (h_counter_r-1+(load_counter_w%3));
+                            end
+                        end
+                        NF_WRITE: begin
+                            if (load_counter_r < 1) begin
+                                we_w = 0;
+                                load_counter_w = load_counter_r + 1;
+                            end else begin
+                                we_w = 1;
+                                nf_state_w = NF_CHECK;
+                                load_counter_w = 0;
+                                if (h_counter_r < H_SYNC_ACT-2)
+                                    h_counter_w = h_counter_r + 1;
+                                else if (h_counter_r == H_SYNC_ACT-1 && v_counter_r < V_SYNC_ACT-2) begin
+                                    h_counter_w = 0;
+                                    v_counter_w = v_counter_r + 1;
+                                end else
+                                    nf_state_w = NF_END;
+                            end
+                        end
+                        NF_END: begin
                             dip_state_w = DIP_END;
                         end
                     endcase
@@ -700,8 +828,8 @@ always_comb begin
                 // set sram read address
                 if(	H_Cont_r>=X_START-1 	&& H_Cont_r<X_START+H_SYNC_ACT-1 &&
                     V_Cont_r>=Y_START+v_mask 	&& V_Cont_r<Y_START+V_SYNC_ACT ) begin
-                    //sram_addr_w = FINAL_START_ADDR + (H_Cont_r - X_START + 1) + (V_Cont_r - Y_START) * H_SYNC_ACT;
-                    sram_addr_w = (H_Cont_r - X_START + 1) + (V_Cont_r - Y_START) * H_SYNC_ACT;
+                    sram_addr_w = BACK_START_ADDR + (H_Cont_r - X_START + 1) + (V_Cont_r - Y_START) * H_SYNC_ACT;
+                    //sram_addr_w = (H_Cont_r - X_START + 1) + (V_Cont_r - Y_START) * H_SYNC_ACT;
                 end
                 // read data from sram
                 if(	H_Cont_r>=X_START 	&& H_Cont_r<X_START+H_SYNC_ACT &&
@@ -761,6 +889,12 @@ always_ff@(posedge iCLK or negedge iRST_N) begin
         his_state_r         <=  HIS_COUNT_HISTO;
         his_max_value_r     <=  0;
         his_max_idx_r       <=  0;
+        // closing
+        cl_state_r          <=  CL_CHECK;
+        cl_output_r         <=  0;
+        cl_mode_r           <=  DILATION;
+        // novel filter
+        nf_state_r          <=  NF_CHECK;
 
     end else begin
         // request
@@ -803,6 +937,12 @@ always_ff@(posedge iCLK or negedge iRST_N) begin
         his_state_r         <=  his_state_w;
         his_max_value_r     <=  his_max_value_w;
         his_max_idx_r       <=  his_max_idx_w;
+        // closing
+        cl_state_r          <=  cl_state_w;
+        cl_output_r         <=  cl_output_w;
+        cl_mode_r           <=  cl_mode_w;
+        // novel filter
+        nf_state_r          <=  nf_state_w;
     end
 end
 
