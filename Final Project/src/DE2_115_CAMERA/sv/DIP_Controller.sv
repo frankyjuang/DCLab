@@ -46,6 +46,7 @@ module	DIP_Controller(	//	Host Side
 						iBlue,
 						oRequest,
                         iDraw,
+                        iNext,
 						//	VGA Side
 						oVGA_R,
 						oVGA_G,
@@ -66,14 +67,14 @@ module	DIP_Controller(	//	Host Side
 						//	Control Signal
 						iCLK,
 						iRST_N,
-						iZOOM_MODE_SW
+						iZOOM_MODE_SW,
+                        oData,
+                        oStart
 							);
 
 
 
-`include "VGA_Param.h"
 
-`ifdef VGA_640x480p60
 //	Horizontal Parameter	( Pixel )
 parameter	H_SYNC_CYC	=	96;
 parameter	H_SYNC_BACK	=	48;
@@ -88,22 +89,6 @@ parameter	V_SYNC_ACT	=	480;
 parameter	V_SYNC_FRONT=	10;
 parameter	V_SYNC_TOTAL=	525;
 
-`else
- // SVGA_800x600p60
-////	Horizontal Parameter	( Pixel )
-parameter	H_SYNC_CYC	=	128;         //Peli
-parameter	H_SYNC_BACK	=	88;
-parameter	H_SYNC_ACT	=	800;
-parameter	H_SYNC_FRONT=	40;
-parameter	H_SYNC_TOTAL=	1056;
-//	Vertical Parameter		( Line )
-parameter	V_SYNC_CYC	=	4;
-parameter	V_SYNC_BACK	=	23;
-parameter	V_SYNC_ACT	=	600;
-parameter	V_SYNC_FRONT=	1;
-parameter	V_SYNC_TOTAL=	628;
-
-`endif
 //	Start Offset
 parameter	X_START		=	H_SYNC_CYC+H_SYNC_BACK;
 parameter	Y_START		=	V_SYNC_CYC+V_SYNC_BACK;
@@ -119,6 +104,7 @@ input		[9:0]	iRed;
 input		[9:0]	iGreen;
 input		[9:0]	iBlue;
 input               iDraw;
+input               iNext;
 output	reg			oRequest;
 
 logic   oRequest_r, oRequest_w;
@@ -174,6 +160,12 @@ assign  ioSRAM_DQ   =   oSRAM_WE_N ? 'z : sram_write_buffer_r;
 input				iCLK;
 input				iRST_N;
 input 				iZOOM_MODE_SW;
+output  reg [335:0] oData;
+output  reg         oStart;
+logic [355:0]       out_data_r, out_data_w;
+logic               out_start_r, out_start_w;
+assign  oData = out_data_r;
+assign  oStart = out_start_r;
 
 //	Internal Registers and Wires
 logic	[12:0]		H_Cont_r, H_Cont_w;
@@ -190,6 +182,7 @@ parameter   VIDEO_MODE          = 3'b000;
 parameter   READ_BUFFER_MODE    = 3'b001;
 parameter   DIP_MODE            = 3'b010;
 parameter   WRITE_BUFFER_MODE   = 3'b011;
+parameter   DRAW_MODE           = 3'b100;
 
 logic   [2:0]   state_r, state_w; // states
 
@@ -203,6 +196,60 @@ parameter   DIP_MAP     =   3'b101;
 parameter   DIP_END     =   3'b110;
 
 logic   [2:0]   dip_state_r, dip_state_w;
+
+// Define draw states
+parameter   DRAW_INIT       =   3'b000;
+parameter   DRAW_START      =   3'b001;
+parameter   DRAW_FIND_DIR   =   3'b010;
+parameter   DRAW_FIND_PATH  =   3'b011;
+parameter   DRAW_PROCESS    =   3'b100;
+parameter   DRAW_SEND       =   3'b101;
+parameter   DRAW_END        =   3'b110;
+
+parameter   DRAW_H_OFFSET   =   200;
+parameter   DRAW_V_OFFSET   =   50;
+
+parameter   DRAW_TIMEOUT    =   200000000;
+
+logic   [2:0]   draw_state_r, draw_state_w;
+
+logic   [19:0]  draw_start_pt_r, draw_start_pt_w;
+logic   [19:0]  draw_end_pt_r, draw_end_pt_w;
+logic   [19:0]  draw_pos_r, draw_pos_w;
+logic   [7:0]   draw_dir_r, draw_dir_w;
+logic   [24:0]  draw_energy_r, draw_energy_w;
+logic   [9:0]   draw_max_r, draw_max_w;
+logic   [9:0]   draw_dir_max_r, draw_dir_max_w;
+logic   [31:0]  draw_timeout_r, draw_timeout_w;
+logic [9:0] draw_640;
+logic [8:0] draw_480;
+logic [5:0] h24, v38;
+logic [5:0] h1, h2, v1, v2;
+logic [9:0] idx1, idx2, idx3, idx4;
+logic [12:0] real_x, real_y, real_z;
+
+// (19 * 12) * 3 = 684
+parameter bit [32:0] COEF [683:0] = '{
+4669,181,5244,4578,197,5200,4491,180,5232,4377,234,5208,4290,243,5198,4161,252,5207,4117,250,5207,3988,239,5198,3901,221,5187,3770,221,5189,3704,209,5189,3590,174,5223,
+4669,181,5244,4578,197,5200,4491,180,5232,4377,234,5208,4290,243,5198,4161,252,5207,4117,250,5207,3988,239,5198,3901,221,5187,3770,221,5189,3704,209,5189,3590,174,5223,
+4641,376,5194,4574,396,5213,4448,405,5192,4363,432,5192,4280,439,5191,4177,450,5201,4117,427,5153,3993,422,5163,3910,396,5173,3808,418,5182,3703,403,5203,3599,407,5184,
+4629,588,5181,4551,574,5200,4472,569,5228,4371,599,5163,4272,592,5163,4175,588,5163,4096,622,5200,3979,602,5163,3919,584,5172,3802,592,5172,3701,573,5209,3618,555,5181,
+4629,715,5155,4535,701,5155,4513,720,5146,4358,746,5148,4264,751,5166,4171,751,5148,4096,769,5158,3984,760,5140,3909,747,5157,3795,733,5166,3719,738,5182,3621,712,5164,
+4601,896,5159,4532,866,5134,4439,875,5201,4349,874,5152,4257,906,5145,4167,913,5178,4096,902,5145,3988,889,5144,3898,885,5152,3809,883,5160,3737,890,5160,3627,888,5177,
+4616,1016,5139,4512,1012,5155,4424,1013,5189,4334,1057,5158,4249,1041,5166,4165,1045,5175,4096,1040,5150,3993,1026,5149,3909,1050,5175,3805,1041,5134,3751,1020,5157,3594,1025,5155,
+4591,1169,5162,4494,1148,5154,4422,1187,5209,4323,1187,5149,4257,1214,5166,4161,1182,5134,4096,1189,5143,3983,1214,5152,3884,1180,5141,3816,1166,5155,3749,1150,5146,3619,1180,5178,
+4587,1291,5139,4490,1297,5162,4362,1312,5141,4328,1333,5150,4252,1313,5135,4158,1319,5128,4096,1309,5135,3987,1310,5135,3893,1315,5135,3832,1318,5149,3749,1286,5139,3639,1295,5131,
+4581,1414,5132,4486,1427,5127,4467,1459,5130,4317,1460,5131,4244,1445,5137,4156,1451,5131,4096,1464,5159,3962,1436,5130,3905,1468,5172,3832,1477,5159,3751,1429,5121,3648,1447,5155,
+4547,1596,5153,4478,1579,5132,4404,1603,5148,4304,1620,5157,4236,1596,5111,4138,1611,5112,4081,1607,5125,3970,1593,5122,3900,1592,5148,3814,1584,5134,3742,1578,5120,3656,1585,5145,
+4552,1722,5143,4458,1715,5150,4390,1711,5126,4308,1729,5135,4227,1742,5136,4149,1722,5122,4083,1721,5122,3976,1725,5122,3897,1728,5135,3831,1734,5135,3763,1724,5132,3650,1707,5117,
+4540,1857,5144,4437,1848,5150,4387,1840,5109,4307,1875,5131,4220,1880,5127,4145,1902,5146,4071,1876,5127,3983,1854,5107,3909,1864,5125,3833,1862,5130,3752,1836,5114,3660,1827,5135,
+4533,1950,5125,4442,1973,5128,4378,1941,5154,4294,2014,5136,4224,2026,5148,4154,2005,5136,4072,2032,5144,3989,1984,5107,3907,1987,5117,3843,1957,5102,3754,1999,5148,3660,1962,5121,
+4501,2104,5143,4430,2123,5141,4362,2123,5137,4285,2112,5112,4217,2126,5114,4139,2137,5136,4074,2133,5112,3985,2114,5118,3919,2119,5118,3852,2123,5127,3770,2104,5128,3664,2092,5130,
+4515,2200,5114,4422,2233,5117,4363,2272,5137,4281,2255,5122,4209,2257,5128,4148,2248,5113,4075,2274,5131,3982,2240,5117,3912,2272,5135,3850,2268,5137,3769,2227,5102,3680,2216,5126,
+4487,2370,5135,4431,2352,5121,4359,2361,5123,4280,2365,5113,4208,2415,5139,4143,2402,5134,4076,2375,5116,3971,2380,5116,3920,2352,5116,3855,2378,5127,3796,2382,5143,3681,2360,5114,
+4473,2475,5143,4418,2466,5134,4336,2515,5144,4264,2508,5136,4202,2511,5143,4140,2517,5148,4069,2469,5127,3987,2472,5127,3915,2488,5134,3854,2506,5139,3782,2461,5113,3691,2444,5120,
+4460,2608,5140,4398,2612,5152,4323,2649,5137,4250,2649,5144,4200,2656,5141,4136,2616,5121,4071,2653,5141,3998,5553,5131,3930,2622,5127,3861,2611,5123,3779,2630,5143,3712,2600,5143
+};
 
 // Control Signals
 logic start_read_sdram_r, start_read_sdram_w;  //indicates whether screenshot is done and should start processing
@@ -308,7 +355,7 @@ parameter   MAP_LOAD_BLOCK  =   2'b01;
 parameter   MAP_WRITE       =   2'b10;
 parameter   MAP_END         =   2'b11;
 
-parameter   MAP_KERNEL_SIZE =   13;
+parameter   MAP_KERNEL_SIZE =   11;
 parameter   MAP_THRES       =   30;
 
 logic   [1:0]   map_state_r, map_state_w;
@@ -380,6 +427,16 @@ always_comb begin
     // mapping line thickness
     map_state_w     = map_state_r;
     map_value_w     = map_value_r;
+
+    // draw
+    draw_start_pt_w = draw_start_pt_r;
+    draw_end_pt_w   = draw_end_pt_r;
+    draw_dir_w      = draw_dir_r;
+    draw_energy_w   = draw_energy_r;
+    draw_max_w      = draw_max_r;
+    draw_dir_max_w  = draw_dir_max_r;
+
+    ////////////////////////////
 
     // check whether to start DIP
     if( iDraw )
@@ -910,6 +967,8 @@ always_comb begin
         end
         WRITE_BUFFER_MODE:
             begin
+                if(iNext && dip_state_r == DIP_END)
+                    state_w = DRAW_MODE;
                 // set sram read address
                 if(	H_Cont_r>=X_START-1 	&& H_Cont_r<X_START+H_SYNC_ACT-1 &&
                     V_Cont_r>=Y_START+v_mask 	&& V_Cont_r<Y_START+V_SYNC_ACT ) begin
@@ -931,6 +990,253 @@ always_comb begin
                     mVGA_B_w = 0;
                 end
             end
+        DRAW_MODE: begin
+            case(draw_state_r)
+                DRAW_INIT: begin
+                    draw_state_w = DRAW_START;
+                    h_counter_w = DRAW_H_OFFSET+1;
+                    v_counter_w = DRAW_H_OFFSET+1;
+                    draw_max_w = 0;
+                    sram_addr_w = v_counter_w * H_SYNC_ACT + h_counter_w;
+                    draw_start_pt_w = sram_addr_w;
+                    draw_energy_w = 0;
+                end
+                DRAW_START: begin
+                    // find max
+                    draw_energy_w = draw_energy_r + ioSRAM_DQ[9:0];
+                    if (ioSRAM_DQ[9:0] > draw_max_r) begin
+                        draw_max_w = ioSRAM_DQ[9:0];
+                        draw_start_pt_w = sram_addr_r;
+                    end
+                    if (h_counter_r < H_SYNC_ACT - DRAW_H_OFFSET - 2) begin
+                        h_counter_w = h_counter_r + 1;
+                    end else if (h_counter_r == H_SYNC_ACT - DRAW_H_OFFSET - 2 && v_counter_r < V_SYNC_ACT - DRAW_V_OFFSET - 2) begin
+                        h_counter_w = DRAW_H_OFFSET + 1;
+                        v_counter_w = v_counter_r + 1;
+                    end else begin
+                        draw_state_w = DRAW_FIND_DIR;
+                        load_counter_w = 0;
+                        sram_addr_w = draw_start_pt_r-H_SYNC_ACT-1;
+                        draw_dir_max_w = 0;
+                        draw_energy_w = draw_energy_w - draw_max_w;
+                    end
+                end
+                DRAW_FIND_DIR: begin
+                    load_counter_w = load_counter_r + 1;
+                    if (load_counter_r == 0) begin
+                        if (ioSRAM_DQ[9:0] > draw_dir_max_r) begin
+                            draw_dir_w = 0;
+                            draw_dir_max_w = ioSRAM_DQ[9:0];
+                        end
+                        sram_addr_w = sram_addr_r + 1;
+                    end else if (load_counter_r == 1) begin
+                        if (ioSRAM_DQ[9:0] > draw_dir_max_r) begin
+                            draw_dir_w = 1;
+                            draw_dir_max_w = ioSRAM_DQ[9:0];
+                        end
+                        sram_addr_w = sram_addr_r + 1;
+                    end else if (load_counter_r == 2) begin
+                        if (ioSRAM_DQ[9:0] > draw_dir_max_r) begin
+                            draw_dir_w = 2;
+                            draw_dir_max_w = ioSRAM_DQ[9:0];
+                        end
+                        sram_addr_w = sram_addr_r + H_SYNC_ACT - 2;
+                    end else if (load_counter_r == 3) begin
+                        if (ioSRAM_DQ[9:0] > draw_dir_max_r) begin
+                            draw_dir_w = 3;
+                            draw_dir_max_w = ioSRAM_DQ[9:0];
+                        end
+                        sram_addr_w = sram_addr_r + 2;
+                    end else if (load_counter_r == 4) begin
+                        if (ioSRAM_DQ[9:0] > draw_dir_max_r) begin
+                            draw_dir_w = 4;
+                            draw_dir_max_w = ioSRAM_DQ[9:0];
+                        end
+                        sram_addr_w = sram_addr_r + H_SYNC_ACT - 2;
+                    end else if (load_counter_r == 5) begin
+                        if (ioSRAM_DQ[9:0] > draw_dir_max_r) begin
+                            draw_dir_w = 5;
+                            draw_dir_max_w = ioSRAM_DQ[9:0];
+                        end
+                        sram_addr_w = sram_addr_r + 1;
+                    end else if (load_counter_r == 6) begin
+                        if (ioSRAM_DQ[9:0] > draw_dir_max_r) begin
+                            draw_dir_w = 6;
+                            draw_dir_max_w = ioSRAM_DQ[9:0];
+                        end
+                        sram_addr_w = sram_addr_r + 1;
+                    end else begin
+                        if (ioSRAM_DQ[9:0] > draw_dir_max_r) begin
+                            draw_dir_w = 7;
+                            draw_dir_max_w = ioSRAM_DQ[9:0];
+                        end
+                        draw_state_w = DRAW_FIND_PATH;
+                        if (draw_dir_w == 0) begin
+                            sram_addr_w = draw_start_pt_r - H_SYNC_ACT - 1;
+                        end else if (draw_dir_w == 1) begin
+                            sram_addr_w = draw_start_pt_r - H_SYNC_ACT;
+                        end else if (draw_dir_w == 2) begin
+                            sram_addr_w = draw_start_pt_r - H_SYNC_ACT + 1;
+                        end else if (draw_dir_w == 3) begin
+                            sram_addr_w = draw_start_pt_r - 1;
+                        end else if (draw_dir_w == 4) begin
+                            sram_addr_w = draw_start_pt_r + 1;
+                        end else if (draw_dir_w == 5) begin
+                            sram_addr_w = draw_start_pt_r + H_SYNC_ACT - 1;
+                        end else if (draw_dir_w == 6) begin
+                            sram_addr_w = draw_start_pt_r + H_SYNC_ACT;
+                        end else begin
+                            sram_addr_w = draw_start_pt_r + H_SYNC_ACT + 1;
+                        end
+                    end
+                end
+                DRAW_FIND_PATH: begin
+                    draw_energy_w = draw_energy_r - ioSRAM_DQ[7:0];
+                    if (draw_dir_w == 0) begin
+                        if (sram_addr_r/H_SYNC_ACT-1 == DRAW_V_OFFSET ||
+                            sram_addr_r%H_SYNC_ACT-1 == DRAW_H_OFFSET ||
+                            ioSRAM_DQ[7:0] == 0) begin
+                            draw_end_pt_w = sram_addr_r;
+                            draw_state_w = DRAW_PROCESS;
+                        end else
+                            sram_addr_w = sram_addr_r - H_SYNC_ACT - 1;
+                    end else if (draw_dir_w == 1) begin
+                        if (sram_addr_r/H_SYNC_ACT-1 == DRAW_V_OFFSET ||
+                            ioSRAM_DQ[7:0] == 0) begin
+                            draw_end_pt_w = sram_addr_r;
+                            draw_state_w = DRAW_PROCESS;
+                        end else
+                            sram_addr_w = sram_addr_r - H_SYNC_ACT;
+                    end else if (draw_dir_w == 2) begin
+                        if (sram_addr_r/H_SYNC_ACT-1 == DRAW_V_OFFSET ||
+                            sram_addr_r%H_SYNC_ACT+1 == H_SYNC_ACT - DRAW_H_OFFSET - 1 ||
+                            ioSRAM_DQ[7:0] == 0) begin
+                            draw_end_pt_w = sram_addr_r;
+                            draw_state_w = DRAW_PROCESS;
+                        end else
+                            sram_addr_w = sram_addr_r - H_SYNC_ACT + 1;
+                    end else if (draw_dir_w == 3) begin
+                        if (sram_addr_r%H_SYNC_ACT-1 == DRAW_H_OFFSET ||
+                            ioSRAM_DQ[7:0] == 0) begin
+                            draw_end_pt_w = sram_addr_r;
+                            draw_state_w = DRAW_PROCESS;
+                        end else
+                            sram_addr_w = sram_addr_r - 1;
+                    end else if (draw_dir_w == 4) begin
+                        if (sram_addr_r%H_SYNC_ACT-1 == H_SYNC_ACT - DRAW_H_OFFSET - 1 ||
+                            ioSRAM_DQ[7:0] == 0) begin
+                            draw_end_pt_w = sram_addr_r;
+                            draw_state_w = DRAW_PROCESS;
+                        end else
+                            sram_addr_w = sram_addr_r + 1;
+                    end else if (draw_dir_w == 5) begin
+                        if (sram_addr_r/H_SYNC_ACT+1 == V_SYNC_ACT - DRAW_V_OFFSET - 1 ||
+                            sram_addr_r%H_SYNC_ACT-1 == DRAW_H_OFFSET ||
+                            ioSRAM_DQ[7:0] == 0) begin
+                            draw_end_pt_w = sram_addr_r;
+                            draw_state_w = DRAW_PROCESS;
+                        end else
+                            sram_addr_w = sram_addr_r + H_SYNC_ACT - 1;
+                    end else if (draw_dir_w == 6) begin
+                        if (sram_addr_r/H_SYNC_ACT+1 == V_SYNC_ACT - DRAW_V_OFFSET - 1 ||
+                            ioSRAM_DQ[7:0] == 0) begin
+                            draw_end_pt_w = sram_addr_r;
+                            draw_state_w = DRAW_PROCESS;
+                        end else
+                            sram_addr_w = sram_addr_r + H_SYNC_ACT;
+                    end else begin
+                        if (sram_addr_r/H_SYNC_ACT+1 == V_SYNC_ACT - DRAW_V_OFFSET - 1 ||
+                            sram_addr_r%H_SYNC_ACT+1 == H_SYNC_ACT - DRAW_H_OFFSET - 1 ||
+                            ioSRAM_DQ[7:0] == 0) begin
+                            draw_end_pt_w = sram_addr_r;
+                            draw_state_w = DRAW_PROCESS;
+                            load_counter_w = 0;
+                        end else
+                            sram_addr_w = sram_addr_r + H_SYNC_ACT + 1;
+                    end
+                end
+                DRAW_PROCESS: begin
+                    if (load_counter_r == 0) begin
+                        draw_640 = draw_start_pt_r % H_SYNC_ACT;
+                        draw_480 = draw_start_pt_r / H_SYNC_ACT;
+                    end else begin
+                        draw_640 = draw_end_pt_r % H_SYNC_ACT;
+                        draw_480 = draw_end_pt_r / H_SYNC_ACT;
+                    end
+
+                    h24 = draw_640 / 20;
+                    v38 = draw_480 / 20;
+
+                    if (h24[0]==1) begin
+                        h1 = h24/2;
+                        h2 = h24/2 + 1;
+                    end else begin
+                        h1 = h24/2;
+                        h2 = h24/21;
+                    end
+                    if (v38[0]==1) begin
+                        v1 = v38/2;
+                        v2 = v38/2 + 1;
+                    end else begin
+                        v1 = v38/2;
+                        v2 = v38/2;
+                    end
+                    idx1 = 3 * h1 + 36 * v1;
+                    idx2 = 3 * h2 + 36 * v1;
+                    idx3 = 3 * h1 + 36 * v2;
+                    idx4 = 3 * h2 + 36 * v2;
+                    real_x = (COEF[idx1]+COEF[idx2]+COEF[idx3]+COEF[idx4])/4;
+                    real_y = (COEF[idx1+1]+COEF[idx2+1]+COEF[idx3+1]+COEF[idx4+1])/4;
+                    real_z = (COEF[idx1+2]+COEF[idx2+2]+COEF[idx3+2]+COEF[idx4+2])/4;
+
+                    load_counter_w = load_counter_r + 1;
+
+                    if (load_counter_r == 0) begin
+                        out_data_w[311:-32] = real_x;
+                        out_data_w[263:-32] = real_y;
+                        out_data_w[215:-32] = real_z;
+                    end else begin
+                        out_data_w[335:-8] = 8'b00001111; //{
+                        out_data_w[327:-8] = 8'b00110011; //[
+                        out_data_w[319:-8] = 8'b01010101; //(
+                        out_data_w[279:-8] = 8'b10101010; //)
+                        out_data_w[271:-8] = 8'b01010101; //(
+                        out_data_w[231:-8] = 8'b10101010; //)
+                        out_data_w[223:-8] = 8'b01010101; //(
+                        out_data_w[183:-8] = 8'b10101010; //)
+                        out_data_w[175:-8] = 8'b11001100; //]
+                        out_data_w[167:-8] = 8'b00110011; //[
+                        out_data_w[159:-8] = 8'b01010101;
+                        out_data_w[151:-32] = real_x;
+                        out_data_w[119:-8] = 8'b10101010;
+                        out_data_w[111:-8] = 8'b01010101;
+                        out_data_w[103:-32] = real_y;
+                        out_data_w[71:-8] = 8'b10101010;
+                        out_data_w[63:-8] = 8'b01010101;
+                        out_data_w[55:-32] = real_z;
+                        out_data_w[23:-8] = 8'b10101010;
+                        out_data_w[15:-8] = 8'b11001100; //]
+                        out_data_w[7:-8] = 8'b11110000;
+                        draw_state_w = DRAW_SEND;
+                        out_start_w = 1;
+                    end
+                end
+                DRAW_SEND: begin
+                    out_start_w = 0;
+                    draw_timeout_w = draw_timeout_r + 1;
+                    if (draw_timeout_r == DRAW_TIMEOUT) begin
+                        draw_state_w = DRAW_START;
+                        h_counter_w = DRAW_H_OFFSET+1;
+                        v_counter_w = DRAW_H_OFFSET+1;
+                        draw_max_w = 0;
+                        sram_addr_w = v_counter_w * H_SYNC_ACT + h_counter_w;
+                        draw_start_pt_w = sram_addr_w;
+                    end
+                end
+                DRAW_END: begin
+                end
+            endcase
+        end
     endcase
 end
 
@@ -986,6 +1292,13 @@ always_ff@(posedge iCLK or negedge iRST_N) begin
         // mapping line thickness
         map_state_r         <=  MAP_CHECK;
         map_value_r         <=  0;
+        // draw
+        draw_start_pt_r     <=  0;
+        draw_end_pt_r       <=  0;
+        draw_dir_r          <=  0;
+        draw_energy_r       <=  '1;
+        draw_max_r          <=  0;
+        draw_dir_max_r      <=  0;
 
     end else begin
         // request
@@ -1037,6 +1350,13 @@ always_ff@(posedge iCLK or negedge iRST_N) begin
         // mapping line thickness
         map_state_r         <=  map_state_w;
         map_value_r         <=  map_value_w;
+        // draw
+        draw_start_pt_r     <=  draw_start_pt_w;
+        draw_end_pt_r       <=  draw_end_pt_w;
+        draw_dir_r          <=  draw_dir_w;
+        draw_energy_r       <=  draw_energy_w;
+        draw_max_r          <=  draw_max_w;
+        draw_dir_max_r      <=  draw_dir_max_w;
     end
 end
 

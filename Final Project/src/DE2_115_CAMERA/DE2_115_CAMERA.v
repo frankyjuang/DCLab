@@ -519,7 +519,7 @@ CCD_Capture			u3	(	.oDATA(mCCD_DATA),
 							.iDATA(rCCD_DATA),
 							.iFVAL(rCCD_FVAL),
 							.iLVAL(rCCD_LVAL),
-							.iSTART(!KEY[3]|auto_start),
+							.iSTART(auto_start),
 							.iEND(!KEY[2]),
 							.iCLK(~D5M_PIXLCLK),
 							.iRST(DLY_RST_2)
@@ -661,6 +661,7 @@ DIP_Controller		u1	(	//	Host Side
 							.iGreen({Read_DATA1[14:10],Read_DATA2[14:10]}),
 							.iBlue(Read_DATA1[9:0]),
                             .iDraw(!KEY[2]),
+                            .iNext(!KEY[3]),
                             //  SRAM Side
                             .oSRAM_ADDR(SRAM_ADDR),
                             .oSRAM_CE_N(SRAM_CE_N),
@@ -680,7 +681,16 @@ DIP_Controller		u1	(	//	Host Side
 							//	Control Signal
 							.iCLK(VGA_CTRL_CLK),
 							.iRST_N(DLY_RST_2),
-							.iZOOM_MODE_SW(SW[16])
+							.iZOOM_MODE_SW(SW[16]),
+                            .oData(Data),
+                            .oStart(Start)
 						);
-
+comm comm (
+        .clk_clk(VGA_CTRL_CLK),                        //                        clk.clk
+		.reset_reset_n(DLY_RST_2),                  //                      reset.reset_n
+		.rs232_0_conduit_end_export(Data),     //        rs232_0_conduit_end.export
+		.rs232_0_conduit_end_1_export(Start),   //      rs232_0_conduit_end_1.export
+		.uart_0_external_connection_rxd(UART_RXD), // uart_0_external_connection.rxd
+		.uart_0_external_connection_txd(UART_TXD)  //                           .txd
+	);
 endmodule

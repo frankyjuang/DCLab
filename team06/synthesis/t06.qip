@@ -1,0 +1,40 @@
+set_global_assignment -entity "t06" -library "t06" -name IP_TOOL_NAME "Qsys"
+set_global_assignment -entity "t06" -library "t06" -name IP_TOOL_VERSION "13.1"
+set_global_assignment -entity "t06" -library "t06" -name IP_TOOL_ENV "Qsys"
+set_global_assignment -library "t06" -name SOPCINFO_FILE [file join $::quartus(qip_path) "../t06.sopcinfo"]
+set_global_assignment -entity "t06" -library "t06" -name SLD_INFO "QSYS_NAME t06 HAS_SOPCINFO 1 GENERATION_ID 1461691325"
+set_global_assignment -library "t06" -name MISC_FILE [file join $::quartus(qip_path) "../t06.cmp"]
+set_global_assignment -library "t06" -name SLD_FILE [file join $::quartus(qip_path) "t06.debuginfo"]
+set_global_assignment -name SYNTHESIS_ONLY_QIP ON
+set_global_assignment -library "t06" -name MISC_FILE [file join $::quartus(qip_path) "../t06.qsys"]
+
+set_global_assignment -library "t06" -name VERILOG_FILE [file join $::quartus(qip_path) "t06.v"]
+set_global_assignment -library "t06" -name VERILOG_FILE [file join $::quartus(qip_path) "submodules/altera_reset_controller.v"]
+set_global_assignment -library "t06" -name VERILOG_FILE [file join $::quartus(qip_path) "submodules/altera_reset_synchronizer.v"]
+set_global_assignment -library "t06" -name SDC_FILE [file join $::quartus(qip_path) "submodules/altera_reset_controller.sdc"]
+set_global_assignment -library "t06" -name VERILOG_FILE [file join $::quartus(qip_path) "submodules/t06_mm_interconnect_0.v"]
+set_global_assignment -library "t06" -name SYSTEMVERILOG_FILE [file join $::quartus(qip_path) "submodules/altera_merlin_slave_translator.sv"]
+set_global_assignment -library "t06" -name SYSTEMVERILOG_FILE [file join $::quartus(qip_path) "submodules/altera_merlin_master_translator.sv"]
+set_global_assignment -library "t06" -name SYSTEMVERILOG_FILE [file join $::quartus(qip_path) "submodules/Rsa256Core.sv"]
+set_global_assignment -library "t06" -name SYSTEMVERILOG_FILE [file join $::quartus(qip_path) "submodules/Rsa256Wrapper.sv"]
+set_global_assignment -library "t06" -name VERILOG_FILE [file join $::quartus(qip_path) "submodules/t06_uart_0.v"]
+set_global_assignment -library "t06" -name VERILOG_FILE [file join $::quartus(qip_path) "submodules/t06_altpll_0.v"]
+
+set_global_assignment -entity "altera_reset_controller" -library "t06" -name IP_TOOL_NAME "altera_reset_controller"
+set_global_assignment -entity "altera_reset_controller" -library "t06" -name IP_TOOL_VERSION "13.1"
+set_global_assignment -entity "altera_reset_controller" -library "t06" -name IP_TOOL_ENV "Qsys"
+set_global_assignment -entity "t06_mm_interconnect_0" -library "t06" -name IP_TOOL_NAME "altera_merlin_interconnect_wrapper"
+set_global_assignment -entity "t06_mm_interconnect_0" -library "t06" -name IP_TOOL_VERSION "13.1"
+set_global_assignment -entity "t06_mm_interconnect_0" -library "t06" -name IP_TOOL_ENV "Qsys"
+set_global_assignment -entity "altera_merlin_slave_translator" -library "t06" -name IP_TOOL_NAME "altera_merlin_slave_translator"
+set_global_assignment -entity "altera_merlin_slave_translator" -library "t06" -name IP_TOOL_VERSION "13.1"
+set_global_assignment -entity "altera_merlin_slave_translator" -library "t06" -name IP_TOOL_ENV "Qsys"
+set_global_assignment -entity "altera_merlin_master_translator" -library "t06" -name IP_TOOL_NAME "altera_merlin_master_translator"
+set_global_assignment -entity "altera_merlin_master_translator" -library "t06" -name IP_TOOL_VERSION "13.1"
+set_global_assignment -entity "altera_merlin_master_translator" -library "t06" -name IP_TOOL_ENV "Qsys"
+set_global_assignment -entity "t06_uart_0" -library "t06" -name IP_TOOL_NAME "altera_avalon_uart"
+set_global_assignment -entity "t06_uart_0" -library "t06" -name IP_TOOL_VERSION "13.1"
+set_global_assignment -entity "t06_uart_0" -library "t06" -name IP_TOOL_ENV "Qsys"
+set_global_assignment -entity "t06_altpll_0" -library "t06" -name IP_TOOL_NAME "altpll"
+set_global_assignment -entity "t06_altpll_0" -library "t06" -name IP_TOOL_VERSION "13.1"
+set_global_assignment -entity "t06_altpll_0" -library "t06" -name IP_TOOL_ENV "Qsys"

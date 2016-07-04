@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<preferences>
+ <debug showDebugMenu="0" />
+ <systemtable>
+  <columns>
+   <connections preferredWidth="95" />
+   <irq preferredWidth="34" />
+  </columns>
+ </systemtable>
+ <clocktable>
+  <columns>
+   <clockname preferredWidth="185" />
+   <clocksource preferredWidth="185" />
+   <frequency preferredWidth="166" />
+  </columns>
+ </clocktable>
+ <window width="1100" height="800" x="44" y="77" />
+ <library
+   expandedCategories="Project,Library/Interface Protocols,Library/Interface Protocols/Serial,Library" />
+ <generation path="C:/Users/Group7/Desktop/team06" />
+</preferences>

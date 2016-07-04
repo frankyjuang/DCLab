@@ -1,0 +1,5 @@
+PLL_Name	t06:my_qsys|t06_altpll_0:altpll_0|t06_altpll_0_altpll_s342:sd1|pll7
+PLLJITTER	30
+PLLSPEmax	84
+PLLSPEmin	-53
+
