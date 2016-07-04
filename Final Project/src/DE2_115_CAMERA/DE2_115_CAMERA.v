@@ -519,7 +519,8 @@ CCD_Capture			u3	(	.oDATA(mCCD_DATA),
 							.iDATA(rCCD_DATA),
 							.iFVAL(rCCD_FVAL),
 							.iLVAL(rCCD_LVAL),
-							.iSTART(!KEY[3]|auto_start),
+							//.iSTART(!KEY[3]|auto_start),
+							.iSTART(auto_start),
 							.iEND(!KEY[2]),
 							.iCLK(~D5M_PIXLCLK),
 							.iRST(DLY_RST_2)
@@ -661,6 +662,7 @@ DIP_Controller		u1	(	//	Host Side
 							.iGreen({Read_DATA1[14:10],Read_DATA2[14:10]}),
 							.iBlue(Read_DATA1[9:0]),
                             .iDraw(!KEY[2]),
+                            .iNext(SW[1]),
                             //  SRAM Side
                             .oSRAM_ADDR(SRAM_ADDR),
                             .oSRAM_CE_N(SRAM_CE_N),
