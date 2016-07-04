@@ -199,7 +199,8 @@ parameter   DIP_ENHANCE =   3'b001;
 parameter   DIP_HISTO   =   3'b010;
 parameter   DIP_CLOSING =   3'b011;
 parameter   DIP_NF      =   3'b100;
-parameter   DIP_END     =   3'b101;
+parameter   DIP_MAP     =   3'b101;
+parameter   DIP_END     =   3'b110;
 
 logic   [2:0]   dip_state_r, dip_state_w;
 
@@ -300,6 +301,19 @@ parameter   NF_END          =   2'b11;
 
 logic   [1:0]   nf_state_r, nf_state_w;
 
+// Generate Sketch Map
+
+parameter   MAP_CHECK       =   2'b00;
+parameter   MAP_LOAD_BLOCK  =   2'b01;
+parameter   MAP_WRITE       =   2'b10;
+parameter   MAP_END         =   2'b11;
+
+parameter   MAP_KERNEL_SIZE =   13;
+parameter   MAP_THRES       =   30;
+
+logic   [1:0]   map_state_r, map_state_w;
+logic   [7:0]   map_value_r, map_value_w;
+
 
 assign v_mask = 13'd0 ;//iZOOM_MODE_SW ? 13'd0 : 13'd26;
 ////////////////////////////////////
@@ -362,6 +376,10 @@ always_comb begin
 
     // novel filter
     nf_state_w      = nf_state_r;
+
+    // mapping line thickness
+    map_state_w     = map_state_r;
+    map_value_w     = map_value_r;
 
     // check whether to start DIP
     if( iDraw )
@@ -636,11 +654,78 @@ always_comb begin
                             end
                         end
                         HIS_END: begin
-                            dip_state_w = DIP_CLOSING;
-                            cl_state_w = CL_CHECK;
-                            cl_mode_w = DILATION;
-                            h_counter_w = CL_KERNEL_SIZE/2;
-                            v_counter_w = CL_KERNEL_SIZE/2;
+                            // Map straight from histo
+                            dip_state_w = DIP_MAP;
+                            map_state_w = MAP_CHECK;
+                            sram_addr_w = FRONT_START_ADDR;
+                            h_counter_w = 0;
+                            v_counter_w = 0;
+
+                            // perform closing
+                            //dip_state_w = DIP_CLOSING;
+                            //cl_state_w = CL_CHECK;
+                            //cl_mode_w = DILATION;
+                            //h_counter_w = CL_KERNEL_SIZE/2;
+                            //v_counter_w = CL_KERNEL_SIZE/2;
+                        end
+                    endcase
+                end
+
+                DIP_MAP: begin
+                    case(map_state_r)
+                        MAP_CHECK: begin
+                            load_counter_w = 0;
+                            if (h_counter_r < MAP_KERNEL_SIZE/2 || h_counter_r > H_SYNC_ACT-MAP_KERNEL_SIZE/2-1 ||
+                                v_counter_r < MAP_KERNEL_SIZE/2 || v_counter_r > V_SYNC_ACT-MAP_KERNEL_SIZE/2-1 || ioSRAM_DQ[7:0]==255) begin
+                                sram_write_buffer_w = ioSRAM_DQ[9:0];
+                                sram_addr_w = BACK_START_ADDR + v_counter_r * H_SYNC_ACT + h_counter_r;
+                                map_state_w = MAP_WRITE;
+                            end else begin
+                                sram_addr_w = FRONT_START_ADDR + (v_counter_r-MAP_KERNEL_SIZE/2) * H_SYNC_ACT + h_counter_r - MAP_KERNEL_SIZE/2;
+                                map_state_w = MAP_LOAD_BLOCK;
+                                map_value_w = 0;
+                            end
+                        end
+                        MAP_LOAD_BLOCK: begin
+                            if (load_counter_r < MAP_KERNEL_SIZE * MAP_KERNEL_SIZE - 1) begin
+                                load_counter_w = load_counter_r + 1;
+                                sram_addr_w = (v_counter_r-MAP_KERNEL_SIZE/2+(load_counter_w/MAP_KERNEL_SIZE)) * H_SYNC_ACT + (h_counter_r-MAP_KERNEL_SIZE/2+(load_counter_w%MAP_KERNEL_SIZE));
+                                if (ioSRAM_DQ[7:0]!=255)
+                                    map_value_w = map_value_r + 1;
+                            end else begin
+                                map_state_w = MAP_WRITE;
+                                if (ioSRAM_DQ[7:0]!=255) begin
+                                    if (map_value_r < MAP_THRES)
+                                        sram_write_buffer_w = 0;
+                                    else
+                                        sram_write_buffer_w = (map_value_r + 1)*3 / 2;
+                                end else if (map_value_r < MAP_THRES)
+                                    sram_write_buffer_w = 0;
+                                else
+                                    sram_write_buffer_w = map_value_r * 3 / 2;
+                                load_counter_w = 0;
+                                sram_addr_w = BACK_START_ADDR + v_counter_r * H_SYNC_ACT + h_counter_r;
+                            end
+                        end
+                        MAP_WRITE: begin
+                            if (load_counter_r < 1) begin
+                                we_w = 0;
+                                load_counter_w = load_counter_r + 1;
+                            end else begin
+                                we_w = 1;
+                                map_state_w = MAP_CHECK;
+                                if (h_counter_r < H_SYNC_ACT-1)
+                                    h_counter_w = h_counter_r + 1;
+                                else if (h_counter_r == H_SYNC_ACT-1 && v_counter_r < V_SYNC_ACT-1) begin
+                                    h_counter_w = 0;
+                                    v_counter_w = v_counter_r + 1;
+                                end else begin
+                                    map_state_w = MAP_END;
+                                end
+                            end
+                        end
+                        MAP_END: begin
+                            dip_state_w = DIP_END;
                         end
                     endcase
                 end
@@ -744,7 +829,7 @@ always_comb begin
                                 load_counter_w = load_counter_r + 1;
                             end else begin
                                 load_counter_w = 0;
-                                if (ioSRAM_DQ[9:0] == 255) begin
+                                if (ioSRAM_DQ[7:0] == 255) begin
                                     if (h_counter_r < H_SYNC_ACT-2)
                                         h_counter_w = h_counter_r + 1;
                                     else if (h_counter_r == H_SYNC_ACT-2 && v_counter_r < V_SYNC_ACT-2) begin
@@ -761,7 +846,7 @@ always_comb begin
                         NF_LOAD_BLOCK: begin
                             load_counter_w = load_counter_r + 1;
                             if (load_counter_r == 1 || load_counter_r == 3 || load_counter_r == 5) begin
-                                if (ioSRAM_DQ[9:0] != 255) begin
+                                if (ioSRAM_DQ[7:0] != 255) begin
                                     nf_state_w = NF_CHECK;
                                     load_counter_w = 0;
                                     if (h_counter_r < H_SYNC_ACT-2)
@@ -775,7 +860,7 @@ always_comb begin
                                     sram_addr_w = FRONT_START_ADDR + (v_counter_r-1+(load_counter_w/3)) * H_SYNC_ACT + (h_counter_r-1+(load_counter_w%3));
                                 end
                             end else if (load_counter_r == 7) begin
-                                if (ioSRAM_DQ[9:0] == 255) begin
+                                if (ioSRAM_DQ[7:0] == 255) begin
                                     sram_addr_w = BACK_START_ADDR + v_counter_r * H_SYNC_ACT + h_counter_r;
                                     load_counter_w = 0;
                                     nf_state_w = NF_WRITE;
@@ -834,9 +919,12 @@ always_comb begin
                 // read data from sram
                 if(	H_Cont_r>=X_START 	&& H_Cont_r<X_START+H_SYNC_ACT &&
                     V_Cont_r>=Y_START+v_mask 	&& V_Cont_r<Y_START+V_SYNC_ACT ) begin
-                    mVGA_R_w[9:2] = ioSRAM_DQ[7:0];
-                    mVGA_G_w[9:2] = ioSRAM_DQ[7:0];
-                    mVGA_B_w[9:2] = ioSRAM_DQ[7:0];
+                    //mVGA_R_w[9:2] = ioSRAM_DQ[7:0];
+                    //mVGA_G_w[9:2] = ioSRAM_DQ[7:0];
+                    //mVGA_B_w[9:2] = ioSRAM_DQ[7:0];
+                    mVGA_R_w[9:2] = 8'b11111111 - ioSRAM_DQ[7:0];
+                    mVGA_G_w[9:2] = 8'b11111111 - ioSRAM_DQ[7:0];
+                    mVGA_B_w[9:2] = 8'b11111111 - ioSRAM_DQ[7:0];
                 end else begin
                     mVGA_R_w = 0;
                     mVGA_G_w = 0;
@@ -895,6 +983,9 @@ always_ff@(posedge iCLK or negedge iRST_N) begin
         cl_mode_r           <=  DILATION;
         // novel filter
         nf_state_r          <=  NF_CHECK;
+        // mapping line thickness
+        map_state_r         <=  MAP_CHECK;
+        map_value_r         <=  0;
 
     end else begin
         // request
@@ -943,6 +1034,9 @@ always_ff@(posedge iCLK or negedge iRST_N) begin
         cl_mode_r           <=  cl_mode_w;
         // novel filter
         nf_state_r          <=  nf_state_w;
+        // mapping line thickness
+        map_state_r         <=  map_state_w;
+        map_value_r         <=  map_value_w;
     end
 end
 
