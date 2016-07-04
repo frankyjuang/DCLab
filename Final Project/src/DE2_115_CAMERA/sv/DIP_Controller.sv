@@ -46,6 +46,7 @@ module	DIP_Controller(	//	Host Side
 						iBlue,
 						oRequest,
                         iDraw,
+                        iNext,
 						//	VGA Side
 						oVGA_R,
 						oVGA_G,
@@ -119,11 +120,14 @@ input		[9:0]	iRed;
 input		[9:0]	iGreen;
 input		[9:0]	iBlue;
 input               iDraw;
+input               iNext;
 output	reg			oRequest;
 
 logic   oRequest_r, oRequest_w;
 
 assign  oRequest    =   oRequest_r;
+
+logic   next_bounced_r, next_bounced_w;
 
 //	VGA Side
 output	reg	[9:0]	oVGA_R;
@@ -190,6 +194,7 @@ parameter   VIDEO_MODE          = 3'b000;
 parameter   READ_BUFFER_MODE    = 3'b001;
 parameter   DIP_MODE            = 3'b010;
 parameter   WRITE_BUFFER_MODE   = 3'b011;
+parameter   DRAW_MODE           = 3'b100;
 
 logic   [2:0]   state_r, state_w; // states
 
@@ -204,6 +209,23 @@ parameter   DIP_END     =   3'b110;
 
 logic   [2:0]   dip_state_r, dip_state_w;
 
+// Define Draw States
+parameter   DRAW_INIT       =   3'b000;
+parameter   DRAW_START      =   3'b001;
+parameter   DRAW_FIND_PATH  =   3'b010;
+parameter   DRAW_SEND       =   3'b011;
+parameter   DRAW_END        =   3'b100;
+
+parameter   DRAW_H_OFFSET   =   200;
+parameter   DRAW_V_OFFSET   =   50;
+
+logic   [2:0]   draw_state_r, draw_state_w;
+
+logic   [19:0]  draw_start_pt_r, draw_start_pt_w;
+logic   [19:0]  draw_end_pt_r, draw_end_pt_w;
+logic   [7:0]   draw_dir_r, draw_dir_w;
+logic   [19:0]  draw_energy_r, draw_energy_w;
+
 // Control Signals
 logic start_read_sdram_r, start_read_sdram_w;  //indicates whether screenshot is done and should start processing
 
@@ -215,11 +237,12 @@ logic   [9:0]   load_counter_r, load_counter_w; // counter for loading data
 // Gaussian Filter Controller
 
 // filter controller states
-parameter FIL_CHECK         = 3'b000;
-parameter FIL_LOAD_BLOCK    = 3'b001;
-parameter FIL_WRITE         = 3'b010;
-parameter FIL_MERGE         = 3'b011;
-parameter FIL_END           = 3'b100;
+parameter FIL_INIT          = 3'b000;
+parameter FIL_CHECK         = 3'b001;
+parameter FIL_LOAD_BLOCK    = 3'b010;
+parameter FIL_WRITE         = 3'b011;
+parameter FIL_MERGE         = 3'b100;
+parameter FIL_END           = 3'b101;
 
 // filter parameters
 parameter FIL_KERNEL_SIZE   = 25;
@@ -259,59 +282,65 @@ logic   [9:0]   fil_orig_val_r, fil_orig_val_w;
 
 // Contrast Enhancement
 
-parameter   EN_COUNT_HISTO  = 2'b00;
-parameter   EN_COUNT_CUMUL  = 2'b01;
-parameter   EN_ENHANCE      = 2'b10;
-parameter   EN_END          = 2'b11;
+parameter   EN_INIT         = 3'b000;
+parameter   EN_COUNT_HISTO  = 3'b001;
+parameter   EN_COUNT_CUMUL  = 3'b010;
+parameter   EN_ENHANCE      = 3'b011;
+parameter   EN_END          = 3'b100;
 
-logic   [1:0]   en_state_r, en_state_w;
+logic   [2:0]   en_state_r, en_state_w;
 logic   [18:0]  histo_r [255:0], histo_w [255:0];
 
 // Histogram Controller
 
-parameter   HIS_COUNT_HISTO = 2'b00;
-parameter   HIS_GET_MAX     = 2'b01;
-parameter   HIS_ELIM        = 2'b10;
-parameter   HIS_END         = 2'b11;
+parameter   HIS_INIT        = 3'b000;
+parameter   HIS_COUNT_HISTO = 3'b001;
+parameter   HIS_GET_MAX     = 3'b010;
+parameter   HIS_ELIM        = 3'b011;
+parameter   HIS_END         = 3'b100;
 
-logic   [1:0]   his_state_r, his_state_w;
+logic   [2:0]   his_state_r, his_state_w;
 logic   [18:0]  his_max_value_r, his_max_value_w;
 logic   [12:0]  his_max_idx_r, his_max_idx_w;
 
 // Closing Controller
 
-parameter   CL_CHECK        =   2'b00;
-parameter   CL_LOAD_BLOCK   =   2'b01;
-parameter   CL_WRITE        =   2'b10;
-parameter   CL_END          =   2'b11;
+parameter   CL_INIT         =   3'b000;
+parameter   CL_CHECK        =   3'b001;
+parameter   CL_LOAD_BLOCK   =   3'b010;
+parameter   CL_WRITE        =   3'b011;
+parameter   CL_END          =   3'b100;
 
 parameter   DILATION        =   1'b0;
 parameter   EROSION         =   1'b1;
 parameter   CL_KERNEL_SIZE  =   3;
 
-logic   [1:0]   cl_state_r, cl_state_w;
+logic   [2:0]   cl_state_r, cl_state_w;
 logic   [9:0]   cl_output_r, cl_output_w;
 logic           cl_mode_r, cl_mode_w;
 
 // Novel Filter
-parameter   NF_CHECK        =   2'b00;
-parameter   NF_LOAD_BLOCK   =   2'b01;
-parameter   NF_WRITE        =   2'b10;
-parameter   NF_END          =   2'b11;
+parameter   NF_INIT         =   3'b000;
+parameter   NF_CHECK        =   3'b001;
+parameter   NF_LOAD_BLOCK   =   3'b010;
+parameter   NF_WRITE        =   3'b011;
+parameter   NF_END          =   3'b100;
 
-logic   [1:0]   nf_state_r, nf_state_w;
+logic   [2:0]   nf_state_r, nf_state_w;
 
 // Generate Sketch Map
 
-parameter   MAP_CHECK       =   2'b00;
-parameter   MAP_LOAD_BLOCK  =   2'b01;
-parameter   MAP_WRITE       =   2'b10;
-parameter   MAP_END         =   2'b11;
+parameter   MAP_INIT        =   3'b000;
+parameter   MAP_CHECK       =   3'b001;
+parameter   MAP_LOAD_BLOCK  =   3'b010;
+parameter   MAP_WRITE       =   3'b011;
+parameter   MAP_END         =   3'b100;
 
-parameter   MAP_KERNEL_SIZE =   13;
+parameter   MAP_KERNEL_SIZE =   9;
 parameter   MAP_THRES       =   30;
 
-logic   [1:0]   map_state_r, map_state_w;
+
+logic   [2:0]   map_state_r, map_state_w;
 logic   [7:0]   map_value_r, map_value_w;
 
 
@@ -326,6 +355,7 @@ always_comb begin
     //////////////////////////////////
     // request
     oRequest_w          =   oRequest_r;
+    next_bounced_w      =   iNext;
     // H & V control
     H_Cont_w            =   H_Cont_r;
     V_Cont_w            =   V_Cont_r;
@@ -472,10 +502,9 @@ always_comb begin
 
             // transition to DIP state
             if( H_Cont_r>=X_START+H_SYNC_ACT+1 && V_Cont_r>=Y_START+V_SYNC_ACT ) begin
-                state_w = DIP_MODE;
-                fil_state_w = DIP_FILTER;
-                h_counter_w = 0;
-                v_counter_w = 0;
+                state_w = WRITE_BUFFER_MODE;
+                dip_state_w = DIP_FILTER;
+                fil_state_w = FIL_INIT;
             end
         end
 
@@ -483,6 +512,11 @@ always_comb begin
             case(dip_state_r)
                 DIP_FILTER: begin
                     case(fil_state_r)
+                        FIL_INIT: begin
+                            h_counter_w = 0;
+                            v_counter_w = 0;
+                            fil_state_w = FIL_CHECK;
+                        end
                         FIL_CHECK: begin
                             load_counter_w = 0;
                             if (h_counter_r < FIL_KERNEL_SIZE/2 || h_counter_r > H_SYNC_ACT-FIL_KERNEL_SIZE/2-1 ||
@@ -550,15 +584,19 @@ always_comb begin
                             end
                         end
                         FIL_END: begin
+                            state_w = WRITE_BUFFER_MODE;
                             dip_state_w = DIP_ENHANCE;
-                            en_state_w = EN_COUNT_HISTO;
-                            sram_addr_w = FRONT_START_ADDR + 1;
+                            en_state_w = EN_INIT;
                         end
                     endcase
                 end
 
                 DIP_ENHANCE: begin
                     case(en_state_r)
+                        EN_INIT: begin
+                            sram_addr_w = FRONT_START_ADDR + 1;
+                            en_state_w = EN_COUNT_HISTO;
+                        end
                         EN_COUNT_HISTO: begin
                             if(sram_addr_r < BACK_START_ADDR)  begin
                                 histo_w[ioSRAM_DQ[9:0]] = histo_r[ioSRAM_DQ[9:0]] + 1;
@@ -596,17 +634,21 @@ always_comb begin
                             end
                         end
                         EN_END: begin
+                            state_w = WRITE_BUFFER_MODE;
                             dip_state_w = DIP_HISTO;
-                            his_state_w = HIS_COUNT_HISTO;
-                            sram_addr_w = FRONT_START_ADDR;
-                            for (int i=0; i<255; i=i+1)
-                                histo_w[i] = 0;
+                            his_state_w = HIS_INIT;
                         end
                     endcase
                 end
 
                 DIP_HISTO: begin
                     case(his_state_r)
+                        HIS_INIT: begin
+                            sram_addr_w = FRONT_START_ADDR;
+                            for (int i=0; i<255; i=i+1)
+                                histo_w[i] = 0;
+                            his_state_w = HIS_COUNT_HISTO;
+                        end
                         HIS_COUNT_HISTO: begin
                             if (sram_addr_r < BACK_START_ADDR) begin
                                 histo_w[ioSRAM_DQ[9:0]] = histo_r[ioSRAM_DQ[9:0]] + 1;
@@ -654,25 +696,26 @@ always_comb begin
                             end
                         end
                         HIS_END: begin
+                            state_w = WRITE_BUFFER_MODE;
                             // Map straight from histo
                             dip_state_w = DIP_MAP;
-                            map_state_w = MAP_CHECK;
-                            sram_addr_w = FRONT_START_ADDR;
-                            h_counter_w = 0;
-                            v_counter_w = 0;
+                            map_state_w = MAP_INIT;
 
                             // perform closing
                             //dip_state_w = DIP_CLOSING;
-                            //cl_state_w = CL_CHECK;
-                            //cl_mode_w = DILATION;
-                            //h_counter_w = CL_KERNEL_SIZE/2;
-                            //v_counter_w = CL_KERNEL_SIZE/2;
+                            //cl_state_w = CL_INIT;
                         end
                     endcase
                 end
 
                 DIP_MAP: begin
                     case(map_state_r)
+                        MAP_INIT: begin
+                            sram_addr_w = FRONT_START_ADDR;
+                            h_counter_w = 0;
+                            v_counter_w = 0;
+                            map_state_w = MAP_CHECK;
+                        end
                         MAP_CHECK: begin
                             load_counter_w = 0;
                             if (h_counter_r < MAP_KERNEL_SIZE/2 || h_counter_r > H_SYNC_ACT-MAP_KERNEL_SIZE/2-1 ||
@@ -714,11 +757,13 @@ always_comb begin
                             end else begin
                                 we_w = 1;
                                 map_state_w = MAP_CHECK;
-                                if (h_counter_r < H_SYNC_ACT-1)
+                                if (h_counter_r < H_SYNC_ACT-1) begin
                                     h_counter_w = h_counter_r + 1;
-                                else if (h_counter_r == H_SYNC_ACT-1 && v_counter_r < V_SYNC_ACT-1) begin
+                                    sram_addr_w = FRONT_START_ADDR + v_counter_r * H_SYNC_ACT + h_counter_w;
+                                end else if (h_counter_r == H_SYNC_ACT-1 && v_counter_r < V_SYNC_ACT-1) begin
                                     h_counter_w = 0;
                                     v_counter_w = v_counter_r + 1;
+                                    sram_addr_w = FRONT_START_ADDR + v_counter_w * H_SYNC_ACT;
                                 end else begin
                                     map_state_w = MAP_END;
                                 end
@@ -732,6 +777,12 @@ always_comb begin
 
                 DIP_CLOSING: begin
                     case(cl_state_r)
+                        CL_INIT: begin
+                            cl_mode_w = DILATION;
+                            h_counter_w = CL_KERNEL_SIZE/2;
+                            v_counter_w = CL_KERNEL_SIZE/2;
+                            cl_state_w = CL_CHECK;
+                        end
                         CL_CHECK: begin
                             load_counter_w = 0;
                             if (cl_mode_r == DILATION)
@@ -812,35 +863,36 @@ always_comb begin
                             end
                         end
                         CL_END: begin
+                            state_w = WRITE_BUFFER_MODE;
                             dip_state_w = DIP_NF;
-                            nf_state_w = NF_CHECK;
-                            h_counter_w = 1;
-                            v_counter_w = 1;
-                            load_counter_w = 0;
+                            nf_state_w = NF_INIT;
                         end
                     endcase
                 end
 
                 DIP_NF: begin
                     case(nf_state_r)
+                        NF_INIT: begin
+                            h_counter_w = 1;
+                            v_counter_w = 1;
+                            sram_addr_w = FRONT_START_ADDR + H_SYNC_ACT + 1;
+                            nf_state_w = NF_CHECK;
+                        end
                         NF_CHECK: begin
-                            if (load_counter_r == 0) begin
-                                sram_addr_w = FRONT_START_ADDR + v_counter_r * H_SYNC_ACT + h_counter_r;
-                                load_counter_w = load_counter_r + 1;
+                            load_counter_w = 0;
+                            if (ioSRAM_DQ[7:0] == 255) begin
+                                if (h_counter_r < H_SYNC_ACT-2) begin
+                                    h_counter_w = h_counter_r + 1;
+                                    sram_addr_w = FRONT_START_ADDR + v_counter_r * H_SYNC_ACT + h_counter_w;
+                                end else if (h_counter_r == H_SYNC_ACT-2 && v_counter_r < V_SYNC_ACT-2) begin
+                                    h_counter_w = 1;
+                                    v_counter_w = v_counter_r + 1;
+                                    sram_addr_w = FRONT_START_ADDR + v_counter_w * H_SYNC_ACT;
+                                end else
+                                    nf_state_w = NF_END;
                             end else begin
-                                load_counter_w = 0;
-                                if (ioSRAM_DQ[7:0] == 255) begin
-                                    if (h_counter_r < H_SYNC_ACT-2)
-                                        h_counter_w = h_counter_r + 1;
-                                    else if (h_counter_r == H_SYNC_ACT-2 && v_counter_r < V_SYNC_ACT-2) begin
-                                        h_counter_w = 0;
-                                        v_counter_w = v_counter_r + 1;
-                                    end else
-                                        nf_state_w = NF_END;
-                                end else begin
-                                    sram_addr_w = FRONT_START_ADDR + (v_counter_r-1) * H_SYNC_ACT + h_counter_r - 1;
-                                    nf_state_w = NF_LOAD_BLOCK;
-                                end
+                                sram_addr_w = FRONT_START_ADDR + (v_counter_r-1) * H_SYNC_ACT + h_counter_r - 1;
+                                nf_state_w = NF_LOAD_BLOCK;
                             end
                         end
                         NF_LOAD_BLOCK: begin
@@ -849,11 +901,13 @@ always_comb begin
                                 if (ioSRAM_DQ[7:0] != 255) begin
                                     nf_state_w = NF_CHECK;
                                     load_counter_w = 0;
-                                    if (h_counter_r < H_SYNC_ACT-2)
+                                    if (h_counter_r < H_SYNC_ACT-2) begin
                                         h_counter_w = h_counter_r + 1;
-                                    else if (h_counter_r == H_SYNC_ACT-2 && v_counter_r < V_SYNC_ACT-2) begin
-                                        h_counter_w = 0;
+                                        sram_addr_w = FRONT_START_ADDR + v_counter_r * H_SYNC_ACT + h_counter_w;
+                                    end else if (h_counter_r == H_SYNC_ACT-2 && v_counter_r < V_SYNC_ACT-2) begin
+                                        h_counter_w = 1;
                                         v_counter_w = v_counter_r + 1;
+                                        sram_addr_w = FRONT_START_ADDR + v_counter_w * H_SYNC_ACT;
                                     end else
                                         nf_state_w = NF_END;
                                 end else begin
@@ -868,11 +922,13 @@ always_comb begin
                                 end else begin
                                     nf_state_w = NF_CHECK;
                                     load_counter_w = 0;
-                                    if (h_counter_r < H_SYNC_ACT-2)
+                                    if (h_counter_r < H_SYNC_ACT-2) begin
                                         h_counter_w = h_counter_r + 1;
-                                    else if (h_counter_r == H_SYNC_ACT-2 && v_counter_r < V_SYNC_ACT-2) begin
-                                        h_counter_w = 0;
+                                        sram_addr_w = FRONT_START_ADDR + v_counter_r * H_SYNC_ACT + h_counter_w;
+                                    end else if (h_counter_r == H_SYNC_ACT-2 && v_counter_r < V_SYNC_ACT-2) begin
+                                        h_counter_w = 1;
                                         v_counter_w = v_counter_r + 1;
+                                        sram_addr_w = FRONT_START_ADDR + v_counter_w * H_SYNC_ACT;
                                     end else
                                         nf_state_w = NF_END;
                                 end
@@ -888,17 +944,22 @@ always_comb begin
                                 we_w = 1;
                                 nf_state_w = NF_CHECK;
                                 load_counter_w = 0;
-                                if (h_counter_r < H_SYNC_ACT-2)
+                                if (h_counter_r < H_SYNC_ACT-2) begin
                                     h_counter_w = h_counter_r + 1;
-                                else if (h_counter_r == H_SYNC_ACT-1 && v_counter_r < V_SYNC_ACT-2) begin
-                                    h_counter_w = 0;
+                                    sram_addr_w = FRONT_START_ADDR + v_counter_r * H_SYNC_ACT + h_counter_w;
+                                end else if (h_counter_r == H_SYNC_ACT-1 && v_counter_r < V_SYNC_ACT-2) begin
+                                    h_counter_w = 1;
                                     v_counter_w = v_counter_r + 1;
+                                    sram_addr_w = FRONT_START_ADDR + v_counter_w * H_SYNC_ACT;
                                 end else
                                     nf_state_w = NF_END;
                             end
                         end
                         NF_END: begin
-                            dip_state_w = DIP_END;
+                            //dip_state_w = DIP_END;
+                            state_w = WRITE_BUFFER_MODE;
+                            dip_state_w = DIP_MAP;
+                            map_state_w = MAP_INIT;
                         end
                     endcase
                 end
@@ -910,27 +971,55 @@ always_comb begin
         end
         WRITE_BUFFER_MODE:
             begin
+                if (next_bounced_w != next_bounced_r && dip_state_r != DIP_END ) begin
+                    state_w = DIP_MODE;
+                end
                 // set sram read address
                 if(	H_Cont_r>=X_START-1 	&& H_Cont_r<X_START+H_SYNC_ACT-1 &&
                     V_Cont_r>=Y_START+v_mask 	&& V_Cont_r<Y_START+V_SYNC_ACT ) begin
-                    sram_addr_w = BACK_START_ADDR + (H_Cont_r - X_START + 1) + (V_Cont_r - Y_START) * H_SYNC_ACT;
-                    //sram_addr_w = (H_Cont_r - X_START + 1) + (V_Cont_r - Y_START) * H_SYNC_ACT;
+                    //if (dip_state_r == DIP_END)
+                        sram_addr_w = BACK_START_ADDR + (H_Cont_r - X_START + 1) + (V_Cont_r - Y_START) * H_SYNC_ACT;
+                    //else
+                        //sram_addr_w = (H_Cont_r - X_START + 1) + (V_Cont_r - Y_START) * H_SYNC_ACT;
                 end
                 // read data from sram
                 if(	H_Cont_r>=X_START 	&& H_Cont_r<X_START+H_SYNC_ACT &&
                     V_Cont_r>=Y_START+v_mask 	&& V_Cont_r<Y_START+V_SYNC_ACT ) begin
-                    //mVGA_R_w[9:2] = ioSRAM_DQ[7:0];
-                    //mVGA_G_w[9:2] = ioSRAM_DQ[7:0];
-                    //mVGA_B_w[9:2] = ioSRAM_DQ[7:0];
-                    mVGA_R_w[9:2] = 8'b11111111 - ioSRAM_DQ[7:0];
-                    mVGA_G_w[9:2] = 8'b11111111 - ioSRAM_DQ[7:0];
-                    mVGA_B_w[9:2] = 8'b11111111 - ioSRAM_DQ[7:0];
+                    //if (dip_state_r == DIP_END) begin
+                        //mVGA_R_w[9:2] = 8'b11111111 - ioSRAM_DQ[7:0];
+                        //mVGA_G_w[9:2] = 8'b11111111 - ioSRAM_DQ[7:0];
+                        //mVGA_B_w[9:2] = 8'b11111111 - ioSRAM_DQ[7:0];
+                    //end else begin
+                        mVGA_R_w[9:2] = ioSRAM_DQ[7:0];
+                        mVGA_G_w[9:2] = ioSRAM_DQ[7:0];
+                        mVGA_B_w[9:2] = ioSRAM_DQ[7:0];
+                    //end
                 end else begin
                     mVGA_R_w = 0;
                     mVGA_G_w = 0;
                     mVGA_B_w = 0;
                 end
             end
+        DRAW_MODE: begin
+            case(draw_state_r)
+                DRAW_INIT: begin
+                    draw_state_w = DRAW_START;
+                    h_counter_w = 0;
+                    v_counter_w = 0;
+                    load_counter_
+                end
+                DRAW_START: begin
+                    // find max
+
+                end
+                DRAW_FIND_PATH: begin
+                end
+                DRAW_SEND: begin
+                end
+                DRAW_END: begin
+                end
+            endcase
+        end
     endcase
 end
 
@@ -938,6 +1027,7 @@ always_ff@(posedge iCLK or negedge iRST_N) begin
     if (!iRST_N) begin
         // request
         oRequest_r          <=  0;
+        next_bounced_r      <=  0;
         // VGA
         mVGA_R_r            <=  0;
         mVGA_G_r            <=  0;
@@ -966,30 +1056,31 @@ always_ff@(posedge iCLK or negedge iRST_N) begin
         // modules //
         /////////////
         // filter
-        fil_state_r         <=  FIL_CHECK;
+        fil_state_r         <=  FIL_INIT;
         fil_sum_r           <=  0;
         fil_orig_val_r      <=  0;
         // contrast enhancement
-        en_state_r          <=  EN_COUNT_HISTO;
+        en_state_r          <=  EN_INIT;
         for (int i=0; i < 255; i=i+1)
             histo_r[i]      <=  0;
         // histogram
-        his_state_r         <=  HIS_COUNT_HISTO;
+        his_state_r         <=  HIS_INIT;
         his_max_value_r     <=  0;
         his_max_idx_r       <=  0;
         // closing
-        cl_state_r          <=  CL_CHECK;
+        cl_state_r          <=  CL_INIT;
         cl_output_r         <=  0;
         cl_mode_r           <=  DILATION;
         // novel filter
-        nf_state_r          <=  NF_CHECK;
+        nf_state_r          <=  NF_INIT;
         // mapping line thickness
-        map_state_r         <=  MAP_CHECK;
+        map_state_r         <=  MAP_INIT;
         map_value_r         <=  0;
 
     end else begin
         // request
         oRequest_r          <=  oRequest_w;
+        next_bounced_r      <=  next_bounced_w;
         // VGA
         mVGA_R_r            <=  mVGA_R_w;
         mVGA_G_r            <=  mVGA_G_w;
