@@ -1,12 +1,14 @@
 #!/bin/python
 
 import serial
+import sys
 
 #####################
 # Initialize Serial #
 #####################
 
-ser = serial.Serial('/dev/ttyUSB0', 9600, xonxoff=True)
+port = sys.argv[1]
+ser = serial.Serial(port, 9600, xonxoff=True)
 # ser.timeout = 1
 ser.reset_input_buffer()
 ser.reset_output_buffer()

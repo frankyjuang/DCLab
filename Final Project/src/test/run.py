@@ -10,7 +10,8 @@ import sys
 # Initialize Serial #
 #####################
 
-ser = serial.Serial('/dev/ttyUSB0', 9600, xonxoff=True)
+port = sys.argv[1]
+ser = serial.Serial(port, 9600, xonxoff=True)
 # ser.timeout = 1
 ser.reset_input_buffer()
 ser.reset_output_buffer()
@@ -49,7 +50,7 @@ def printHelp():
     print("Movements\tControls  \tStatus    \tSettings")
     print("f: fore  \tA: attach \tC: get xyz\tS: set Step")
     print("b: back  \tD: detach \tP: get PIN\tT: set Time")
-    print("l: left  \tB: buzz   \t          \tR: reset S/T")
+    print("l: left  \tB: buzz   \tF: get FSR\tR: reset S/T")
     print("r: right \t          \t          \t")
     print("u: up    \t          \t          \t")
     print("d: down  \t          \t          \t")
@@ -63,6 +64,7 @@ def printHelp():
 
 signal.signal(signal.SIGINT, handler)
 
+ser.write(b'A')
 ser.write(b'u')
 print("h for help");
 while True:

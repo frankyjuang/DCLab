@@ -4,6 +4,7 @@
 #define BUZZER  3   // HIGH = ON
 #define BTN_D4  4   // LOW = Pressed
 #define BTN_D7  7   // LOW = Pressed
+#define FSR     7   // Analog
 /*
 void move_to_at_once(double x, double y, double z, int relative, double servo_4_angle)
 void angle_to_coordinate(double& x, double& y, double &z)
@@ -65,7 +66,7 @@ void loop() {
         */
         if (readSerial == 'A') {
             uarm.init();
-            Serial.println("Can't manually attach.");
+            Serial.println("Successfully attached.");
         } else if (readSerial == 'D') {
             uarm.set_servo_status(false, SERVO_ROT_NUM);
             uarm.set_servo_status(false, SERVO_LEFT_NUM);
@@ -81,6 +82,7 @@ void loop() {
         **********
         C: get xyz coordinates
         P: get PIN status
+        F: get FSR value
         */
         if (readSerial == 'C') {
             double x, y, z;
@@ -92,6 +94,8 @@ void loop() {
             Serial.println(digitalRead(STOPPER));
             Serial.println(digitalRead(BTN_D4));
             Serial.println(digitalRead(BTN_D7));
+        } else if (readSerial =='F') {
+            Serial.println(analogRead(FSR));
         }
 
         /***********
